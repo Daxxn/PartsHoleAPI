@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace PartsInventory.Models.Enums
+namespace PartsHoleLib.Enums
 {
    public enum EIAStandard
    {

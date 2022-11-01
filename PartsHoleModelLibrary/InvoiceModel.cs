@@ -1,9 +1,9 @@
 ﻿using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
-using PartsHoleAPI.Models.Interfaces;
-using PartsInventory.Models.Enums;
+using PartsHoleLib.Interfaces;
+using PartsHoleLib.Enums;
 
-namespace PartsHoleAPI.Models
+namespace PartsHoleLib.Models
 {
    public class InvoiceModel : IInvoiceModel
    {

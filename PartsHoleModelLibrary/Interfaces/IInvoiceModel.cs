@@ -1,6 +1,6 @@
-﻿using PartsInventory.Models.Enums;
+﻿using PartsHoleLib.Enums;
 
-namespace PartsHoleAPI.Models.Interfaces
+namespace PartsHoleLib.Interfaces
 {
     public interface IInvoiceModel : IModel
     {

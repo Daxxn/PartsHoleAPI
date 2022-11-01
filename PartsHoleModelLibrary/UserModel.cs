@@ -1,8 +1,8 @@
 ﻿using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Bson;
-using PartsHoleAPI.Models.Interfaces;
+using PartsHoleLib.Interfaces;
 
-namespace PartsHoleAPI.Models
+namespace PartsHoleLib
 {
    public class UserModel : IUserModel
    {

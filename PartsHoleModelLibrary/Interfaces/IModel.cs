@@ -1,7 +1,7 @@
 ﻿using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Bson;
 
-namespace PartsHoleAPI.Models.Interfaces
+namespace PartsHoleLib.Interfaces
 {
    public interface IModel
    {

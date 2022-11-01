@@ -3,8 +3,10 @@ using Microsoft.Extensions.Configuration;
 using MongoDB.Driver;
 
 using PartsHoleAPI.Collections;
-using PartsHoleAPI.Models;
-using PartsHoleAPI.Models.Interfaces;
+using PartsHoleAPI.Utils;
+
+using PartsHoleLib;
+using PartsHoleLib.Interfaces;
 
 namespace PartsHoleAPI
 {

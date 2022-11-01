@@ -1,11 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc.ApplicationModels;
-
-using MongoDB.Bson;
+﻿using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Driver;
-using PartsHoleAPI.Models.Interfaces;
+using PartsHoleLib.Interfaces;
 
-namespace PartsHoleAPI.Models
+namespace PartsHoleLib
 {
    public class PartModel : IPartModel
    {

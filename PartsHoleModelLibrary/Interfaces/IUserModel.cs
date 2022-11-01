@@ -1,4 +1,4 @@
-﻿namespace PartsHoleAPI.Models.Interfaces
+﻿namespace PartsHoleLib.Interfaces
 {
    public interface IUserModel : IModel
    {

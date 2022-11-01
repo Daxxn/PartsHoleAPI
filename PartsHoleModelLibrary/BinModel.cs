@@ -1,8 +1,8 @@
 ﻿using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
-using PartsHoleAPI.Models.Interfaces;
+using PartsHoleLib.Interfaces;
 
-namespace PartsHoleAPI.Models
+namespace PartsHoleLib
 {
    public class BinModel : IBinModel
    {

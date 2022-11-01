@@ -2,8 +2,8 @@
 
 using MongoDB.Driver;
 
-using PartsHoleAPI.Models;
-using PartsHoleAPI.Models.Interfaces;
+using PartsHoleAPI.Utils;
+using PartsHoleLib.Interfaces;
 
 namespace PartsHoleAPI.Collections
 {

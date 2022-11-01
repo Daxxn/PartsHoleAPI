@@ -2,7 +2,7 @@
 using Microsoft.Extensions.Options;
 
 using PartsHoleAPI.Collections;
-using PartsHoleAPI.Models.Interfaces;
+using PartsHoleLib.Interfaces;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 

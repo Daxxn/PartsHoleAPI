@@ -1,8 +1,6 @@
-﻿using Microsoft.Extensions.Options;
+﻿using PartsHoleLib.Interfaces;
 
-using PartsHoleAPI.Models.Interfaces;
-
-namespace PartsHoleAPI.Models
+namespace PartsHoleAPI.Utils
 {
    public class DatabaseSettings : IDatabaseSettings
    {
