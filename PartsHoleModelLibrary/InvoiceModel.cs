@@ -3,13 +3,13 @@ using MongoDB.Bson.Serialization.Attributes;
 using PartsHoleLib.Interfaces;
 using PartsHoleLib.Enums;
 
-namespace PartsHoleLib.Models
+namespace PartsHoleLib
 {
    public class InvoiceModel : IInvoiceModel
    {
       [BsonId]
       [BsonRepresentation(BsonType.ObjectId)]
-      public string Id { get; set; } = null!;
+      public string? Id { get; set; }
       public List<IPartModel> Parts { get; set; } = null!;
       public SupplierType? SupplierType { get; set; }
       public string? Path { get; set; }

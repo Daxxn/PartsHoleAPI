@@ -2,7 +2,7 @@ using Microsoft.Extensions.Configuration;
 
 using MongoDB.Driver;
 
-using PartsHoleAPI.Collections;
+using PartsHoleAPI.DBServices;
 using PartsHoleAPI.Utils;
 
 using PartsHoleLib;
@@ -16,31 +16,25 @@ namespace PartsHoleAPI
       {
          var builder = WebApplication.CreateBuilder(args);
 
-         // Database testing...
-         TestDBConnection(builder);
-
          // Add services to the container.
-         //builder.Services.Configure<DatabaseSettings>(
-         //    builder.Configuration.GetSection("DatabaseSettings"));
-         //var moviesConfig = builder.Configuration.GetSection("Mongo")
-
          builder.Services.Configure<DatabaseSettings>(
             builder.Configuration.GetSection("Database"));
 
-
          builder.Services.AddControllers();
-         // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+         // OpenAPI : https://aka.ms/aspnetcore/swashbuckle
          builder.Services.AddEndpointsApiExplorer();
          builder.Services.AddSwaggerGen();
 
-         builder.Services.AddSingleton<UserCollection>();
-         builder.Services.AddSingleton<PartsCollection>();
+         // I can get my models registered but they dont get resolved properly
+         // in the ICollectionService interface / Collection class.
+         //builder.Services.AddTransient<IUserModel, UserModel>();
+         //builder.Services.AddTransient<IPartModel, PartModel>();
+         //builder.Services.AddTransient<IBinModel, BinModel>();
+         //builder.Services.AddTransient<IInvoiceModel, InvoiceModel>();
 
-         builder.Services.AddTransient<IPartModel, PartModel>();
-         builder.Services.AddTransient<IUserModel, UserModel>();
-
-         //var clientService = builder.Services.AddSingleton<IMongoClient>(client);
-
+         builder.Services.AddSingleton<IModelService<UserModel>, UserCollection>();
+         builder.Services.AddSingleton<ICollectionService<PartModel>, PartsCollection>();
+         builder.Services.AddSingleton<ICollectionService<BinModel>, BinCollection>();
 
          var app = builder.Build();
 
@@ -58,17 +52,6 @@ namespace PartsHoleAPI
          app.MapControllers();
 
          app.Run();
-      }
-
-      private static async Task TestDBConnection(WebApplicationBuilder builder)
-      {
-         MongoClient client = new("mongodb+srv://admin:VcXAvL1ki0mphGKR@partsinventorydev.ljk92th.mongodb.net/?retryWrites=true&w=majority");
-         var dbs = await client.ListDatabaseNames().ToListAsync();
-
-         if (dbs is null)
-         {
-            Console.WriteLine("Unable to find DB...");
-         }
       }
    }
 }

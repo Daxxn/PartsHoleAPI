@@ -1,15 +1,15 @@
 ﻿using MongoDB.Driver;
 
-namespace PartsHoleAPI.Collections
+namespace PartsHoleAPI.DBServices
 {
    public interface ICollectionService<T> : IModelService<T>
    {
-      Task<IEnumerable<T>?> GetFromDatabase(string[] ids);
+      Task<IEnumerable<T>?> GetFromDatabaseAsync(string[] ids);
 
-      Task<IEnumerable<T>?> AddToDatabase(IEnumerable<T> data);
+      Task<IEnumerable<T>?> AddToDatabaseAsync(IEnumerable<T> data);
 
-      Task UpdateDatabase(IEnumerable<T> data);
+      Task UpdateDatabaseAsync(IEnumerable<T> data);
 
-      Task<int> DeleteFromDatabase(string[] id);
+      Task<int> DeleteFromDatabaseAsync(string[] id);
    }
 }

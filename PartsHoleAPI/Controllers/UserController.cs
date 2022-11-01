@@ -1,9 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
-using PartsHoleAPI.Collections;
-using PartsHoleLib.Interfaces;
+using PartsHoleAPI.DBServices;
 
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+using PartsHoleLib;
+using PartsHoleLib.Interfaces;
 
 namespace PartsHoleAPI.Controllers
 {
@@ -12,23 +12,25 @@ namespace PartsHoleAPI.Controllers
    public class UserController : ControllerBase
    {
       private readonly UserCollection _userCollection;
+      private readonly ILogger<UserController> _logger;
 
-      public UserController(UserCollection userCollection)
+      public UserController(ILogger<UserController> logger, UserCollection userCollection)
       {
          _userCollection = userCollection;
+         _logger = logger;
       }
 
       // GET: api/<UserController>
       [HttpGet]
-      public string Get()
+      public ActionResult<string> Get()
       {
-         StatusCode(StatusCodes.Status400BadRequest);
-         return "Not Allowed. A user ID is required.";
+         _logger.Log(LogLevel.Debug, "Attempt to call generic GET method.");
+         return Ok("Not allowed. A User ID is required.");
       }
 
       // GET api/<UserController>/5
       [HttpGet("{id:length(24)}")]
-      public async Task<ActionResult<IUserModel>> Get(string id)
+      public async Task<ActionResult<UserModel>> Get(string id)
       {
          if (string.IsNullOrEmpty(id))
          {
@@ -44,9 +46,14 @@ namespace PartsHoleAPI.Controllers
 
       // POST api/<UserController>
       [HttpPost]
-      public void Post([FromBody] IUserModel? value)
+      public void Post([FromBody] UserModel? value)
       {
-         if (value is null) return;
+         if (value is null)
+         {
+            _logger.LogWarning("Unable to construct user model from body.");
+            return;
+         }
+
       }
 
       // POST api/<UserController>/login
@@ -58,7 +65,7 @@ namespace PartsHoleAPI.Controllers
 
       // PUT api/<UserController>/test
       [HttpPut("{id:length(24)}")]
-      public void Put(string id, [FromBody] IUserModel? value)
+      public void Put(string id, [FromBody] UserModel? value)
       {
       }
 
@@ -71,7 +78,7 @@ namespace PartsHoleAPI.Controllers
             StatusCode(StatusCodes.Status400BadRequest);
             return;
          }
-         if (await _userCollection.DeleteFromDatabase(id))
+         if (await _userCollection.DeleteFromDatabaseAsync(id))
          {
             StatusCode(StatusCodes.Status202Accepted);
          }

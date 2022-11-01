@@ -3,14 +3,16 @@
 using MongoDB.Driver;
 
 using PartsHoleAPI.Utils;
+
+using PartsHoleLib;
 using PartsHoleLib.Interfaces;
 
-namespace PartsHoleAPI.Collections
+namespace PartsHoleAPI.DBServices
 {
-   public class UserCollection : IModelService<IUserModel>
+   public class UserCollection : IModelService<UserModel>
    {
       #region Local Props
-      public IMongoCollection<IUserModel> Collection { get; init; }
+      public IMongoCollection<UserModel> Collection { get; init; }
       #endregion
 
       #region Constructors
@@ -19,37 +21,43 @@ namespace PartsHoleAPI.Collections
          var client = new MongoClient(settings.Value.ConnectionString);
          Collection = client
             .GetDatabase(settings.Value.Name)
-            .GetCollection<IUserModel>(settings.Value.UsersCollection);
+            .GetCollection<UserModel>(settings.Value.UsersCollection);
       }
       #endregion
 
       #region Methods
-      public async Task<IUserModel> GetFromDatabaseAsync(string id)
+      public async Task<UserModel?> GetFromDatabaseAsync(string id)
       {
-         return await Collection.Find(x => x.Id == id).FirstOrDefaultAsync();
+         var result = await Collection.FindAsync(x => x.Id == id);
+         if (result == null)
+            return null;
+         var user = await result.FirstOrDefaultAsync();
+         return user;
       }
-      public async Task<IUserModel> AddToDatabaseAsync(IUserModel data)
+      public async Task<UserModel?> AddToDatabaseAsync(UserModel data)
       {
-         //var filter = Builders<IUserModel>.Filter.Eq("Id", data.Id);
-         var foundUsers = (await Collection.Find(x => x.Id == data.Id).ToListAsync()).Count > 0;
-         if (!foundUsers)
+         var result = await Collection.FindAsync(x => x.Id == data.Id);
+         if (result is null) return null;
+
+         var foundUsers = await result.ToListAsync();
+         if (foundUsers.Count == 0)
          {
             await Collection.InsertOneAsync(data);
          }
          return data;
       }
-      public async Task UpdateDatabase(IUserModel data)
+      public async Task UpdateDatabaseAsync(string id, UserModel data)
       {
-         var filter = Builders<IUserModel>.Filter.Eq("Id", data.Id);
+         var filter = Builders<UserModel>.Filter.Where((u) => u.Id == id);
          await Collection.ReplaceOneAsync(filter, data);
          //var foundUser = Collection.Find(x => x.Id == data.Id).FirstOrDefault();
          //if (foundUser != null)
          //{
          //}
       }
-      public async Task<bool> DeleteFromDatabase(string id)
+      public async Task<bool> DeleteFromDatabaseAsync(string id)
       {
-         var filter = Builders<IUserModel>.Filter.Eq("Id", id);
+         var filter = Builders<UserModel>.Filter.Where((u) => u.Id == id);
          var result = await Collection.DeleteOneAsync(filter);
          return result != null && result?.DeletedCount > 0;
       }

@@ -1,10 +1,10 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 
-using PartsHoleAPI.Collections;
-using PartsHoleLib.Interfaces;
+using PartsHoleAPI.DBServices;
 
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+using PartsHoleLib;
+using PartsHoleLib.Interfaces;
 
 namespace PartsHoleAPI.Controllers
 {
@@ -12,40 +12,31 @@ namespace PartsHoleAPI.Controllers
    [ApiController]
    public class TestingController : ControllerBase
    {
-      private readonly PartsCollection _partsCollection;
-      public TestingController(PartsCollection partsCollection)
+      private readonly ICollectionService<PartModel> _partsCollection;
+      public TestingController(ICollectionService<PartModel> partsCollection)
       {
          _partsCollection = partsCollection;
       }
 
       // GET: api/<TestingController>
       [HttpGet]
-      public async Task<ActionResult<IPartModel>> Get()
+      public async Task<ActionResult<PartModel?>> Get()
       {
          var part = await _partsCollection.GetFromDatabaseAsync("6360180d1a792e2787223cff");
 
-         if (part is null)
-         {
-            StatusCode(StatusCodes.Status404NotFound);
-            return NotFound();
-         }
-         StatusCode(StatusCodes.Status200OK);
-         return Ok(part);
+         return part is null ? NotFound() : Ok(part);
       }
 
-      // GET api/<TestingController>/5
+      // GET api/<TestingController>/6360180d1a792e2787223cff
       [HttpGet("{id:length(24)}")]
-      public async Task<ActionResult<IPartModel>> Get(string id)
+      public async Task<ActionResult<PartModel?>> Get(string id)
       {
          if (string.IsNullOrEmpty(id))
          {
-            StatusCode(StatusCodes.Status400BadRequest);
-            return null;
+            return BadRequest();
          }
          var part = await _partsCollection.GetFromDatabaseAsync(id);
-         if (part is null)
-            return NotFound(id);
-         return Ok(part);
+         return part is null ? NotFound() : Ok(part);
       }
 
       // POST api/<TestingController>
@@ -55,14 +46,14 @@ namespace PartsHoleAPI.Controllers
          StatusCode(StatusCodes.Status501NotImplemented);
       }
 
-      // PUT api/<TestingController>/5
+      // PUT api/<TestingController>/6360180d1a792e2787223cff
       [HttpPut("{id}")]
       public async Task Put(int id, [FromBody] string value)
       {
          StatusCode(StatusCodes.Status501NotImplemented);
       }
 
-      // DELETE api/<TestingController>/5
+      // DELETE api/<TestingController>/6360180d1a792e2787223cff
       [HttpDelete("{id}")]
       public async Task<int> Delete(int id)
       {

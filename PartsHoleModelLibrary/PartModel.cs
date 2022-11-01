@@ -11,8 +11,8 @@ namespace PartsHoleLib
       [BsonId]
       [BsonRepresentation(BsonType.ObjectId)]
       public string? Id { get; set; }
-      public string SupplierPartNumber { get; set; }
-      public string PartNumber { get; set; }
+      public string SupplierPartNumber { get; set; } = null!;
+      public string PartNumber { get; set; } = null!;
       public string? Description { get; set; }
       public string? Reference { get; set; }
       public uint Quantity { get; set; }
@@ -28,6 +28,7 @@ namespace PartsHoleLib
       #endregion
 
       #region Methods
+      public override string ToString() => $"{PartNumber} : {Reference} : {Quantity} : {Description:15}";
       #endregion
 
       #region Full Props

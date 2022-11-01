@@ -3,14 +3,16 @@
 using MongoDB.Driver;
 
 using PartsHoleAPI.Utils;
+
+using PartsHoleLib;
 using PartsHoleLib.Interfaces;
 
-namespace PartsHoleAPI.Collections
+namespace PartsHoleAPI.DBServices
 {
-   public class PartsCollection : ICollectionService<IPartModel>
+   public class PartsCollection : ICollectionService<PartModel>
    {
       #region Local Props
-      public IMongoCollection<IPartModel> Collection { get; init; }
+      public IMongoCollection<PartModel> Collection { get; init; }
       #endregion
 
       #region Constructors
@@ -19,44 +21,80 @@ namespace PartsHoleAPI.Collections
          var client = new MongoClient(settings.Value.ConnectionString);
          Collection = client
             .GetDatabase(settings.Value.Name)
-            .GetCollection<IPartModel>(settings.Value.PartsCollection);
+            .GetCollection<PartModel>(settings.Value.PartsCollection);
       }
       #endregion
 
       #region Methods
-      public async Task<IEnumerable<IPartModel>?> GetFromDatabase(string[] ids)
-      {
-         var filter = Builders<IPartModel>.Filter.Where(x => ids.Contains(x.Id));
-         return await Collection.Find(filter).ToListAsync();
-      }
-      public async Task UpdateDatabase(IPartModel data)
-      {
-         var filter = Builders<IPartModel>.Filter.Where(x => data.Id == x.Id);
-
-         await Collection.ReplaceOneAsync(filter, data);
-      }
-      public async Task UpdateDatabase(IEnumerable<IPartModel> data)
-      {
-
-      }
-
-      public async Task<IPartModel?> GetFromDatabaseAsync(string id)
+      public async Task<PartModel?> GetFromDatabaseAsync(string id)
       {
          //var filter = Builders<IPartModel>.Filter.Eq("_id", id);
-         return await Collection.Find(p => p.Id == id).FirstOrDefaultAsync();
+         var result = await Collection.FindAsync(part => part.Id == id);
+         if (result is null) return null;
+         var parts = await result.ToListAsync();
+         if (parts is null) return null;
+         if (parts.Count > 1) throw new Exception("Multiple parts found with that ID. Something is horribly wrong!!");
+         return parts[0];
       }
-      public async Task<IPartModel?> AddToDatabaseAsync(IPartModel data)
+      public async Task<IEnumerable<PartModel>?> GetFromDatabaseAsync(string[] ids)
       {
-         var filter = Builders<IPartModel>.Filter.Eq("Id", data.Id);
+         //var filter = Builders<IIPartModel>.Filter.Where(x => ids.Contains(x.Id));
+         var result = await Collection.FindAsync(part => ids.Contains(part.Id));
+         return result is null ? null : (IEnumerable<PartModel>)await result.ToListAsync();
+      }
+
+      public async Task<PartModel?> AddToDatabaseAsync(PartModel data)
+      {
+         var filter = Builders<PartModel>.Filter.Eq("Id", data.Id);
          if (await Collection.Find(filter).FirstOrDefaultAsync() is null)
          {
             await Collection.InsertOneAsync(data);
          }
          return data;
       }
-      public async Task<IEnumerable<IPartModel>> AddToDatabase(IEnumerable<IPartModel> data) => throw new NotImplementedException();
-      public async Task<bool> DeleteFromDatabase(string id) => throw new NotImplementedException();
-      public async Task<int> DeleteFromDatabase(string[] id) => throw new NotImplementedException();
+      public async Task<IEnumerable<PartModel>?> AddToDatabaseAsync(IEnumerable<PartModel> data)
+      {
+         var ids = data.Select(x => x.Id).ToList();
+         var result = await Collection.FindAsync(part => ids.Contains(part.Id));
+         if (result is null) return Enumerable.Empty<PartModel>();
+         if (result.ToList().Count > 0) return Enumerable.Empty<PartModel>();
+         await Parallel.ForEachAsync(data, async (part, token) =>
+         {
+            await AddToDatabaseAsync(part);
+         });
+         return data;
+      }
+
+      public async Task UpdateDatabaseAsync(string id, PartModel data)
+      {
+         var filter = Builders<PartModel>.Filter.Where(x => id == x.Id);
+         var result = await Collection.FindAsync(filter);
+         if (result is null)
+         {
+            await AddToDatabaseAsync(data);
+            return;
+         }
+         await Collection.ReplaceOneAsync(filter, data);
+      }
+      public async Task UpdateDatabaseAsync(IEnumerable<PartModel> data)
+      {
+         await Parallel.ForEachAsync(data, async (d, token) =>
+         {
+            if (token.IsCancellationRequested) return;
+            await UpdateDatabaseAsync(d.Id, d);
+         });
+      }
+
+      public async Task<bool> DeleteFromDatabaseAsync(string id)
+      {
+         var result = await Collection.DeleteOneAsync((p) => p.Id == id);
+         return result is null ? false : result.DeletedCount > 0;
+      }
+      public async Task<int> DeleteFromDatabaseAsync(string[] ids)
+      {
+         var result = await Collection.DeleteManyAsync((p) => ids.Contains(p.Id));
+         return result is null ? 0 : (int)result.DeletedCount;
+      }
       #endregion
 
       #region Full Props

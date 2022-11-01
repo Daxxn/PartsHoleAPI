@@ -1,9 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
-using PartsHoleAPI.Collections;
-using PartsHoleLib.Interfaces;
+using PartsHoleAPI.DBServices;
 
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+using PartsHoleLib;
+using PartsHoleLib.Interfaces;
 
 namespace PartsHoleAPI.Controllers
 {
@@ -11,19 +11,21 @@ namespace PartsHoleAPI.Controllers
    [ApiController]
    public class PartsController : ControllerBase
    {
-      private readonly PartsCollection _partsCollection;
+      private readonly ICollectionService<PartModel> _partsCollection;
+      private readonly ILogger<PartsController> _logger;
 
-      public PartsController(PartsCollection partsCollection)
+      public PartsController(ILogger<PartsController> logger, ICollectionService<PartModel> partsCollection)
       {
          _partsCollection = partsCollection;
+         _logger = logger;
       }
 
       // GET: api/<PartsController>
       [HttpGet]
-      public string Get()
+      public ActionResult<string> Get()
       {
-         NoContent();
-         return "Not allowed. A part ID is required.";
+         _logger.Log(LogLevel.Debug, "Attempt to call generic GET method.");
+         return Ok("Not allowed. A part ID is required.");
       }
 
       // GET api/<PartsController>/5
@@ -40,9 +42,11 @@ namespace PartsHoleAPI.Controllers
 
       // POST api/<PartsController>
       [HttpPost]
-      public async Task Post([FromBody] string value)
+      public async Task Post([FromBody] PartModel? value)
       {
-
+         if (value is null)
+            return;
+         await _partsCollection.AddToDatabaseAsync(value);
       }
 
       // PUT api/<PartsController>/5
