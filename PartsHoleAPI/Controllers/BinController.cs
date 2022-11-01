@@ -2,6 +2,7 @@
 
 using PartsHoleAPI.DBServices;
 using PartsHoleLib;
+using PartsHoleLib.Interfaces;
 
 namespace PartsHoleAPI.Controllers
 {
@@ -9,9 +10,9 @@ namespace PartsHoleAPI.Controllers
    [ApiController]
    public class BinController : ControllerBase
    {
-      private readonly ICollectionService<BinModel> _collection;
+      private readonly ICollectionService<IBinModel> _collection;
       private readonly ILogger<BinController> _logger;
-      public BinController(ILogger<BinController> logger, ICollectionService<BinModel> collection)
+      public BinController(ILogger<BinController> logger, ICollectionService<IBinModel> collection)
       {
          _collection = collection;
          _logger = logger;
@@ -26,15 +27,15 @@ namespace PartsHoleAPI.Controllers
       }
 
       // GET api/<BinController>/5
-      [HttpGet("{id}")]
-      public string Get(int id)
+      [HttpGet("{id:length(24)}")]
+      public string Get(string? id)
       {
          return "value";
       }
 
       // POST api/<BinController>
       [HttpPost]
-      public void Post([FromBody] string value)
+      public void Post([FromBody] IBinModel? value)
       {
       }
 
@@ -49,7 +50,7 @@ namespace PartsHoleAPI.Controllers
 
       // PUT api/<BinController>/5
       [HttpPut("{id}")]
-      public void Put(int id, [FromBody] string value)
+      public void Put(int id, [FromBody] IBinModel? value)
       {
       }
 

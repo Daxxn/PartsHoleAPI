@@ -3,11 +3,8 @@ using MongoDB.Bson;
 
 namespace PartsHoleLib.Interfaces
 {
-   public interface IUserModel
+   public interface IUserModel : IModel
    {
-      [BsonId]
-      [BsonRepresentation(BsonType.ObjectId)]
-      string? Id { get; set; }
       List<IInvoiceModel> Invoices { get; set; }
       List<IPartModel> Parts { get; set; }
       string Username { get; set; }

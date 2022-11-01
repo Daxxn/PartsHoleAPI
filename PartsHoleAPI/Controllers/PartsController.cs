@@ -11,10 +11,10 @@ namespace PartsHoleAPI.Controllers
    [ApiController]
    public class PartsController : ControllerBase
    {
-      private readonly ICollectionService<PartModel> _partsCollection;
+      private readonly ICollectionService<IPartModel> _partsCollection;
       private readonly ILogger<PartsController> _logger;
 
-      public PartsController(ILogger<PartsController> logger, ICollectionService<PartModel> partsCollection)
+      public PartsController(ILogger<PartsController> logger, ICollectionService<IPartModel> partsCollection)
       {
          _partsCollection = partsCollection;
          _logger = logger;
@@ -42,7 +42,7 @@ namespace PartsHoleAPI.Controllers
 
       // POST api/<PartsController>
       [HttpPost]
-      public async Task Post([FromBody] PartModel? value)
+      public async Task Post([FromBody] IPartModel? value)
       {
          if (value is null)
             return;

@@ -11,10 +11,10 @@ namespace PartsHoleAPI.Controllers
    [ApiController]
    public class UserController : ControllerBase
    {
-      private readonly UserCollection _userCollection;
+      private readonly ICollectionService<IUserModel> _userCollection;
       private readonly ILogger<UserController> _logger;
 
-      public UserController(ILogger<UserController> logger, UserCollection userCollection)
+      public UserController(ILogger<UserController> logger, ICollectionService<IUserModel> userCollection)
       {
          _userCollection = userCollection;
          _logger = logger;
@@ -30,7 +30,7 @@ namespace PartsHoleAPI.Controllers
 
       // GET api/<UserController>/5
       [HttpGet("{id:length(24)}")]
-      public async Task<ActionResult<UserModel>> Get(string id)
+      public async Task<ActionResult<IUserModel>> Get(string id)
       {
          if (string.IsNullOrEmpty(id))
          {
@@ -46,7 +46,7 @@ namespace PartsHoleAPI.Controllers
 
       // POST api/<UserController>
       [HttpPost]
-      public void Post([FromBody] UserModel? value)
+      public void Post([FromBody] IUserModel? value)
       {
          if (value is null)
          {
@@ -65,7 +65,7 @@ namespace PartsHoleAPI.Controllers
 
       // PUT api/<UserController>/test
       [HttpPut("{id:length(24)}")]
-      public void Put(string id, [FromBody] UserModel? value)
+      public void Put(string id, [FromBody] IUserModel? value)
       {
       }
 

@@ -9,10 +9,10 @@ using PartsHoleLib.Interfaces;
 
 namespace PartsHoleAPI.DBServices
 {
-   public class PartsCollection : ICollectionService<PartModel>
+   public class PartsCollection : ICollectionService<IPartModel>
    {
       #region Local Props
-      public IMongoCollection<PartModel> Collection { get; init; }
+      public IMongoCollection<IPartModel> Collection { get; init; }
       #endregion
 
       #region Constructors
@@ -21,12 +21,12 @@ namespace PartsHoleAPI.DBServices
          var client = new MongoClient(settings.Value.ConnectionString);
          Collection = client
             .GetDatabase(settings.Value.Name)
-            .GetCollection<PartModel>(settings.Value.PartsCollection);
+            .GetCollection<IPartModel>(settings.Value.PartsCollection);
       }
       #endregion
 
       #region Methods
-      public async Task<PartModel?> GetFromDatabaseAsync(string id)
+      public async Task<IPartModel?> GetFromDatabaseAsync(string id)
       {
          //var filter = Builders<IPartModel>.Filter.Eq("_id", id);
          var result = await Collection.FindAsync(part => part.Id == id);
@@ -36,28 +36,28 @@ namespace PartsHoleAPI.DBServices
          if (parts.Count > 1) throw new Exception("Multiple parts found with that ID. Something is horribly wrong!!");
          return parts[0];
       }
-      public async Task<IEnumerable<PartModel>?> GetFromDatabaseAsync(string[] ids)
+      public async Task<IEnumerable<IPartModel>?> GetFromDatabaseAsync(string[] ids)
       {
          //var filter = Builders<IIPartModel>.Filter.Where(x => ids.Contains(x.Id));
          var result = await Collection.FindAsync(part => ids.Contains(part.Id));
-         return result is null ? null : (IEnumerable<PartModel>)await result.ToListAsync();
+         return result is null ? null : (IEnumerable<IPartModel>)await result.ToListAsync();
       }
 
-      public async Task<PartModel?> AddToDatabaseAsync(PartModel data)
+      public async Task<IPartModel?> AddToDatabaseAsync(IPartModel data)
       {
-         var filter = Builders<PartModel>.Filter.Eq("Id", data.Id);
+         var filter = Builders<IPartModel>.Filter.Eq("Id", data.Id);
          if (await Collection.Find(filter).FirstOrDefaultAsync() is null)
          {
             await Collection.InsertOneAsync(data);
          }
          return data;
       }
-      public async Task<IEnumerable<PartModel>?> AddToDatabaseAsync(IEnumerable<PartModel> data)
+      public async Task<IEnumerable<IPartModel>?> AddToDatabaseAsync(IEnumerable<IPartModel> data)
       {
          var ids = data.Select(x => x.Id).ToList();
          var result = await Collection.FindAsync(part => ids.Contains(part.Id));
-         if (result is null) return Enumerable.Empty<PartModel>();
-         if (result.ToList().Count > 0) return Enumerable.Empty<PartModel>();
+         if (result is null) return Enumerable.Empty<IPartModel>();
+         if (result.ToList().Count > 0) return Enumerable.Empty<IPartModel>();
          await Parallel.ForEachAsync(data, async (part, token) =>
          {
             await AddToDatabaseAsync(part);
@@ -65,9 +65,9 @@ namespace PartsHoleAPI.DBServices
          return data;
       }
 
-      public async Task UpdateDatabaseAsync(string id, PartModel data)
+      public async Task UpdateDatabaseAsync(string id, IPartModel data)
       {
-         var filter = Builders<PartModel>.Filter.Where(x => id == x.Id);
+         var filter = Builders<IPartModel>.Filter.Where(x => id == x.Id);
          var result = await Collection.FindAsync(filter);
          if (result is null)
          {
@@ -76,7 +76,7 @@ namespace PartsHoleAPI.DBServices
          }
          await Collection.ReplaceOneAsync(filter, data);
       }
-      public async Task UpdateDatabaseAsync(IEnumerable<PartModel> data)
+      public async Task UpdateDatabaseAsync(IEnumerable<IPartModel> data)
       {
          await Parallel.ForEachAsync(data, async (d, token) =>
          {

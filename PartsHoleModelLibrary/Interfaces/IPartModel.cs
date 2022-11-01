@@ -1,13 +1,16 @@
 ﻿using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Serializers;
+using SharpCompress.Common;
 
 namespace PartsHoleLib.Interfaces
 {
-   public interface IPartModel
+   public interface IPartModel : IModel
    {
-      [BsonId]
-      [BsonRepresentation(BsonType.ObjectId)]
-      string? Id { get; set; }
+      //[BsonId]
+      ////[BsonRepresentation(BsonType.ObjectId)]
+      //[BsonSerializer(typeof(ImpliedImplementationInterfaceSerializer<IPartModel, PartModel>))]
+      //string? Id { get; set; }
       string PartNumber { get; set; }
       string SupplierPartNumber { get; set; }
       string? Reference { get; set; }

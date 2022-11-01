@@ -5,11 +5,8 @@ using PartsHoleLib.Enums;
 
 namespace PartsHoleLib.Interfaces
 {
-   public interface IInvoiceModel
+   public interface IInvoiceModel : IModel
    {
-      [BsonId]
-      [BsonRepresentation(BsonType.ObjectId)]
-      string? Id { get; set; }
       int OrderNumber { get; set; }
       List<IPartModel> Parts { get; set; }
       string? Path { get; set; }

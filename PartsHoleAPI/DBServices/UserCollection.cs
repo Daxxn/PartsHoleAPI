@@ -9,10 +9,10 @@ using PartsHoleLib.Interfaces;
 
 namespace PartsHoleAPI.DBServices
 {
-   public class UserCollection : IModelService<UserModel>
+   public class UserCollection : IModelService<IUserModel>
    {
       #region Local Props
-      public IMongoCollection<UserModel> Collection { get; init; }
+      public IMongoCollection<IUserModel> Collection { get; init; }
       #endregion
 
       #region Constructors
@@ -21,12 +21,12 @@ namespace PartsHoleAPI.DBServices
          var client = new MongoClient(settings.Value.ConnectionString);
          Collection = client
             .GetDatabase(settings.Value.Name)
-            .GetCollection<UserModel>(settings.Value.UsersCollection);
+            .GetCollection<IUserModel>(settings.Value.UsersCollection);
       }
       #endregion
 
       #region Methods
-      public async Task<UserModel?> GetFromDatabaseAsync(string id)
+      public async Task<IUserModel?> GetFromDatabaseAsync(string id)
       {
          var result = await Collection.FindAsync(x => x.Id == id);
          if (result == null)
@@ -34,7 +34,7 @@ namespace PartsHoleAPI.DBServices
          var user = await result.FirstOrDefaultAsync();
          return user;
       }
-      public async Task<UserModel?> AddToDatabaseAsync(UserModel data)
+      public async Task<IUserModel?> AddToDatabaseAsync(IUserModel data)
       {
          var result = await Collection.FindAsync(x => x.Id == data.Id);
          if (result is null) return null;
@@ -46,9 +46,9 @@ namespace PartsHoleAPI.DBServices
          }
          return data;
       }
-      public async Task UpdateDatabaseAsync(string id, UserModel data)
+      public async Task UpdateDatabaseAsync(string id, IUserModel data)
       {
-         var filter = Builders<UserModel>.Filter.Where((u) => u.Id == id);
+         var filter = Builders<IUserModel>.Filter.Where((u) => u.Id == id);
          await Collection.ReplaceOneAsync(filter, data);
          //var foundUser = Collection.Find(x => x.Id == data.Id).FirstOrDefault();
          //if (foundUser != null)
@@ -57,7 +57,7 @@ namespace PartsHoleAPI.DBServices
       }
       public async Task<bool> DeleteFromDatabaseAsync(string id)
       {
-         var filter = Builders<UserModel>.Filter.Where((u) => u.Id == id);
+         var filter = Builders<IUserModel>.Filter.Where((u) => u.Id == id);
          var result = await Collection.DeleteOneAsync(filter);
          return result != null && result?.DeletedCount > 0;
       }

@@ -9,10 +9,10 @@ using PartsHoleLib.Interfaces;
 
 namespace PartsHoleAPI.DBServices
 {
-   public class BinCollection : ICollectionService<BinModel>
+   public class BinCollection : ICollectionService<IBinModel>
    {
       #region Local Props
-      public IMongoCollection<BinModel> Collection { get; init; }
+      public IMongoCollection<IBinModel> Collection { get; init; }
       #endregion
 
       #region Constructors
@@ -21,19 +21,19 @@ namespace PartsHoleAPI.DBServices
          var client = new MongoClient(settings.Value.ConnectionString);
          Collection = client
             .GetDatabase(settings.Value.Name)
-            .GetCollection<BinModel>(settings.Value.BinsCollection);
+            .GetCollection<IBinModel>(settings.Value.BinsCollection);
       }
       #endregion
 
       #region Methods
-      public async Task<BinModel> GetFromDatabaseAsync(string id) => throw new NotImplementedException();
-      public async Task<IEnumerable<BinModel>> GetFromDatabaseAsync(string[] ids) => throw new NotImplementedException();
+      public async Task<IBinModel> GetFromDatabaseAsync(string id) => throw new NotImplementedException();
+      public async Task<IEnumerable<IBinModel>> GetFromDatabaseAsync(string[] ids) => throw new NotImplementedException();
 
-      public async Task<IEnumerable<BinModel>> AddToDatabaseAsync(IEnumerable<BinModel> data) => throw new NotImplementedException();
-      public async Task<BinModel> AddToDatabaseAsync(BinModel data) => throw new NotImplementedException();
+      public async Task<IEnumerable<IBinModel>> AddToDatabaseAsync(IEnumerable<IBinModel> data) => throw new NotImplementedException();
+      public async Task<IBinModel> AddToDatabaseAsync(IBinModel data) => throw new NotImplementedException();
 
-      public async Task UpdateDatabaseAsync(IEnumerable<BinModel> data) => throw new NotImplementedException();
-      public async Task UpdateDatabaseAsync(string id, BinModel data) => throw new NotImplementedException();
+      public async Task UpdateDatabaseAsync(IEnumerable<IBinModel> data) => throw new NotImplementedException();
+      public async Task UpdateDatabaseAsync(string id, IBinModel data) => throw new NotImplementedException();
 
       public async Task<int> DeleteFromDatabaseAsync(string[] id) => throw new NotImplementedException();
       public async Task<bool> DeleteFromDatabaseAsync(string id) => throw new NotImplementedException();

@@ -1,5 +1,7 @@
 using Microsoft.Extensions.Configuration;
 
+using MongoDB.Bson.Serialization.Serializers;
+using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
 
 using PartsHoleAPI.DBServices;
@@ -7,6 +9,9 @@ using PartsHoleAPI.Utils;
 
 using PartsHoleLib;
 using PartsHoleLib.Interfaces;
+
+using SharpCompress.Common;
+using static MongoDB.Driver.WriteConcern;
 
 namespace PartsHoleAPI
 {
@@ -25,16 +30,30 @@ namespace PartsHoleAPI
          builder.Services.AddEndpointsApiExplorer();
          builder.Services.AddSwaggerGen();
 
+         BsonSerializer.RegisterSerializer(
+            new ImpliedImplementationInterfaceSerializer<IUserModel, UserModel>(
+               BsonSerializer.LookupSerializer<UserModel>()));
+         BsonSerializer.RegisterSerializer(
+            new ImpliedImplementationInterfaceSerializer<IPartModel, PartModel>(
+               BsonSerializer.LookupSerializer<PartModel>()));
+         BsonSerializer.RegisterSerializer(
+            new ImpliedImplementationInterfaceSerializer<IBinModel, BinModel>(
+               BsonSerializer.LookupSerializer<BinModel>()));
+         BsonSerializer.RegisterSerializer(
+            new ImpliedImplementationInterfaceSerializer<IInvoiceModel, InvoiceModel>(
+               BsonSerializer.LookupSerializer<InvoiceModel>()));
+
          // I can get my models registered but they dont get resolved properly
          // in the ICollectionService interface / Collection class.
-         //builder.Services.AddTransient<IUserModel, UserModel>();
-         //builder.Services.AddTransient<IPartModel, PartModel>();
-         //builder.Services.AddTransient<IBinModel, BinModel>();
-         //builder.Services.AddTransient<IInvoiceModel, InvoiceModel>();
+         builder.Services.AddScoped<IUserModel, UserModel>();
+         builder.Services.AddScoped<IPartModel, PartModel>();
+         builder.Services.AddScoped<IBinModel, BinModel>();
+         builder.Services.AddScoped<IInvoiceModel, InvoiceModel>();
 
-         builder.Services.AddSingleton<IModelService<UserModel>, UserCollection>();
-         builder.Services.AddSingleton<ICollectionService<PartModel>, PartsCollection>();
-         builder.Services.AddSingleton<ICollectionService<BinModel>, BinCollection>();
+         builder.Services.AddSingleton<IModelService<IUserModel>, UserCollection>();
+         builder.Services.AddSingleton<ICollectionService<IPartModel>, PartsCollection>();
+         builder.Services.AddSingleton<ICollectionService<IBinModel>, BinCollection>();
+         builder.Services.AddSingleton<ICollectionService<IInvoiceModel>, InvoiceCollection>();
 
          var app = builder.Build();
 
