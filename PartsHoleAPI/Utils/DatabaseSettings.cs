@@ -1,6 +1,4 @@
-﻿using PartsHoleLib.Interfaces;
-
-namespace PartsHoleAPI.Utils
+﻿namespace PartsHoleAPI.Utils
 {
    public class DatabaseSettings : IDatabaseSettings
    {

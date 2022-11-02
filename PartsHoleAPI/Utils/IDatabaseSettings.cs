@@ -1,4 +1,4 @@
-﻿namespace PartsHoleLib.Interfaces
+﻿namespace PartsHoleAPI.Utils
 {
    public interface IDatabaseSettings
    {
