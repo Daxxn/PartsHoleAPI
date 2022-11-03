@@ -6,9 +6,9 @@ namespace PartsHoleAPI.DBServices
    {
       Task<IEnumerable<T>?> GetFromDatabaseAsync(string[] ids);
 
-      Task<IEnumerable<T>?> AddToDatabaseAsync(IEnumerable<T> data);
+      Task<IEnumerable<bool>?> AddToDatabaseAsync(IEnumerable<T> data);
 
-      Task UpdateDatabaseAsync(IEnumerable<T> data);
+      Task<IEnumerable<bool>?> UpdateDatabaseAsync(IEnumerable<T> data);
 
       Task<int> DeleteFromDatabaseAsync(string[] id);
    }

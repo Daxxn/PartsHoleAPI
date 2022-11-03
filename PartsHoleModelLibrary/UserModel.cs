@@ -8,13 +8,14 @@ namespace PartsHoleLib
    {
       [BsonId]
       [BsonRepresentation(BsonType.ObjectId)]
-      public string? Id { get; set; }
-      public string Username { get; set; } = null!;
+      public string Id { get; set; } = null!;
+      public string UserName { get; set; } = null!;
       public string AuthID { get; set; } = null!;
+      public string? Email { get; set; }
 
-      public List<IPartModel> Parts { get; set; } = null!;
-      public List<IInvoiceModel> Invoices { get; set; } = null!;
-      // Going to add later. Figuring out the foundation of the api is more important right now.
-      //public PassivesCollection Passives { get; set; }
+      [BsonRepresentation(BsonType.ObjectId)]
+      public List<string> Parts { get; set; } = null!;
+      [BsonRepresentation(BsonType.ObjectId)]
+      public List<string> Invoices { get; set; } = null!;
    }
 }

@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Options;
 
+using MongoDB.Bson;
 using MongoDB.Driver;
 
 using PartsHoleAPI.Utils;
@@ -7,21 +8,26 @@ using PartsHoleAPI.Utils;
 using PartsHoleLib;
 using PartsHoleLib.Interfaces;
 
+using PartsHoleModelLibrary;
+
 namespace PartsHoleAPI.DBServices
 {
-   public class UserCollection : IModelService<IUserModel>
+   public class UserCollection : IUserCollection
    {
       #region Local Props
       public IMongoCollection<IUserModel> Collection { get; init; }
+      private IMongoCollection<IPartModel> PartsCollection { get; init; }
+      private IMongoCollection<IInvoiceModel> InvoicesCollection { get; init; }
       #endregion
 
       #region Constructors
       public UserCollection(IOptions<DatabaseSettings> settings)
       {
          var client = new MongoClient(settings.Value.ConnectionString);
-         Collection = client
-            .GetDatabase(settings.Value.Name)
-            .GetCollection<IUserModel>(settings.Value.UsersCollection);
+         var db = client.GetDatabase(settings.Value.Name);
+         Collection = db.GetCollection<IUserModel>(settings.Value.UsersCollection);
+         PartsCollection = db.GetCollection<IPartModel>(settings.Value.PartsCollection);
+         InvoicesCollection = db.GetCollection<IInvoiceModel>(settings.Value.InvoiceCollection);
       }
       #endregion
 
@@ -34,26 +40,50 @@ namespace PartsHoleAPI.DBServices
          var user = await result.FirstOrDefaultAsync();
          return user;
       }
-      public async Task<IUserModel?> AddToDatabaseAsync(IUserModel data)
+      public async Task<IUserData?> GetUserDataFromDatabaseAsync(IUserModel user)
+      {
+         IUserData data = new UserData();
+
+         if (user.Parts.Count > 0)
+         {
+            var partIds = user.Parts.Select(x => x.ToString());
+            var partsResult = await PartsCollection.FindAsync((x) => partIds.Contains(x.Id));
+            if (partsResult != null)
+            {
+               data.Parts = await partsResult.ToListAsync();
+            }
+         }
+         if (user.Invoices.Count > 0)
+         {
+            var invoiceIds = user.Invoices.Select(x => x.ToString());
+            var invoiceResult = await InvoicesCollection.FindAsync((x) => invoiceIds.Contains(x.Id));
+            if (invoiceResult != null)
+            {
+               data.Invoices = await invoiceResult.ToListAsync();
+            }
+         }
+
+         return data;
+      }
+      public async Task<bool> AddToDatabaseAsync(IUserModel data)
       {
          var result = await Collection.FindAsync(x => x.Id == data.Id);
-         if (result is null) return null;
+         if (result is null)
+            return false;
 
          var foundUsers = await result.ToListAsync();
          if (foundUsers.Count == 0)
          {
             await Collection.InsertOneAsync(data);
+            return true;
          }
-         return data;
+         return false;
       }
-      public async Task UpdateDatabaseAsync(string id, IUserModel data)
+      public async Task<bool> UpdateDatabaseAsync(string id, IUserModel data)
       {
          var filter = Builders<IUserModel>.Filter.Where((u) => u.Id == id);
-         await Collection.ReplaceOneAsync(filter, data);
-         //var foundUser = Collection.Find(x => x.Id == data.Id).FirstOrDefault();
-         //if (foundUser != null)
-         //{
-         //}
+         var result = await Collection.ReplaceOneAsync(filter, data);
+         return result is null ? false : result.ModifiedCount > 0;
       }
       public async Task<bool> DeleteFromDatabaseAsync(string id)
       {

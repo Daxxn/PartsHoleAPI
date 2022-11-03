@@ -8,7 +8,7 @@ namespace PartsHoleLib
    {
       [BsonId]
       [BsonRepresentation(BsonType.ObjectId)]
-      public string? Id { get; set; }
+      public string Id { get; set; } = null!;
       public string Name { get; set; } = "BIN";
       public int Horizontal { get; set; }
       public int Vertical { get; set; }

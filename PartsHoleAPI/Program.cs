@@ -13,6 +13,7 @@ using PartsHoleLib.Interfaces;
 using SharpCompress.Common;
 using static MongoDB.Driver.WriteConcern;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using PartsHoleModelLibrary;
 
 namespace PartsHoleAPI
 {
@@ -29,15 +30,15 @@ namespace PartsHoleAPI
             builder.Configuration.GetSection("Auth0"));
          //var auth0 = builder.Configuration.Get<Auth0Settings>();
 
-         builder.Services.AddAuthentication(opt =>
-         {
-            opt.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-            opt.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-         }).AddJwtBearer(opt =>
-         {
-            opt.Authority = builder.Configuration["Auth0:Authority"];
-            opt.Audience = builder.Configuration["Auth0:Audience"];
-         });
+         //builder.Services.AddAuthentication(opt =>
+         //{
+         //   opt.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+         //   opt.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+         //}).AddJwtBearer(opt =>
+         //{
+         //   opt.Authority = builder.Configuration["Auth0:Authority"];
+         //   opt.Audience = builder.Configuration["Auth0:Audience"];
+         //});
 
          builder.Services.AddControllers();
          // OpenAPI : https://aka.ms/aspnetcore/swashbuckle
@@ -57,15 +58,19 @@ namespace PartsHoleAPI
          BsonSerializer.RegisterSerializer(
             new ImpliedImplementationInterfaceSerializer<IInvoiceModel, InvoiceModel>(
                BsonSerializer.LookupSerializer<InvoiceModel>()));
+         BsonSerializer.RegisterSerializer(
+            new ImpliedImplementationInterfaceSerializer<IUserData, UserData>(
+               BsonSerializer.LookupSerializer<UserData>()));
 
          // Registers the models with the DI service.
          builder.Services.AddScoped<IUserModel, UserModel>();
+         builder.Services.AddScoped<IUserData, UserData>();
          builder.Services.AddScoped<IPartModel, PartModel>();
          builder.Services.AddScoped<IBinModel, BinModel>();
          builder.Services.AddScoped<IInvoiceModel, InvoiceModel>();
 
          // Registers the MongoDB Collections with the DI service.
-         builder.Services.AddSingleton<IModelService<IUserModel>, UserCollection>();
+         builder.Services.AddSingleton<IUserCollection, UserCollection>();
          builder.Services.AddSingleton<ICollectionService<IPartModel>, PartsCollection>();
          builder.Services.AddSingleton<ICollectionService<IBinModel>, BinCollection>();
          builder.Services.AddSingleton<ICollectionService<IInvoiceModel>, InvoiceCollection>();

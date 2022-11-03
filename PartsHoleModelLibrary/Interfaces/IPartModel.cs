@@ -7,10 +7,6 @@ namespace PartsHoleLib.Interfaces
 {
    public interface IPartModel : IModel
    {
-      //[BsonId]
-      ////[BsonRepresentation(BsonType.ObjectId)]
-      //[BsonSerializer(typeof(ImpliedImplementationInterfaceSerializer<IPartModel, PartModel>))]
-      //string? Id { get; set; }
       string PartNumber { get; set; }
       string SupplierPartNumber { get; set; }
       string? Reference { get; set; }

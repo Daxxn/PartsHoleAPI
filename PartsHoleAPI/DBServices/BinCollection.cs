@@ -26,17 +26,91 @@ namespace PartsHoleAPI.DBServices
       #endregion
 
       #region Methods
-      public async Task<IBinModel> GetFromDatabaseAsync(string id) => throw new NotImplementedException();
-      public async Task<IEnumerable<IBinModel>> GetFromDatabaseAsync(string[] ids) => throw new NotImplementedException();
+      public async Task<IBinModel?> GetFromDatabaseAsync(string id)
+      {
+         var result = await Collection.FindAsync(part => part.Id == id);
+         if (result is null)
+            return null;
+         var parts = await result.ToListAsync();
+         if (parts is null)
+            return null;
+         if (parts.Count > 1)
+            throw new Exception("Multiple invoices found with that ID. Something is horribly wrong!!");
+         return parts[0];
+      }
+      public async Task<IEnumerable<IBinModel>?> GetFromDatabaseAsync(string[] ids)
+      {
+         var result = await Collection.FindAsync(part => ids.Contains(part.Id));
+         return result is null ? null : (IEnumerable<IBinModel>)await result.ToListAsync();
+      }
 
-      public async Task<IEnumerable<IBinModel>> AddToDatabaseAsync(IEnumerable<IBinModel> data) => throw new NotImplementedException();
-      public async Task<IBinModel> AddToDatabaseAsync(IBinModel data) => throw new NotImplementedException();
+      public async Task<bool> AddToDatabaseAsync(IBinModel data)
+      {
+         var filter = Builders<IBinModel>.Filter.Eq("Id", data.Id);
+         if (await Collection.Find(filter).FirstOrDefaultAsync() is null)
+         {
+            await Collection.InsertOneAsync(data);
+            return true;
+         }
+         return false;
+      }
+      public async Task<IEnumerable<bool>?> AddToDatabaseAsync(IEnumerable<IBinModel> data)
+      {
+         var status = new List<bool>();
+         var partData = data.ToList();
+         var ids = data.Select(x => x.Id).ToList();
+         var result = await Collection.FindAsync(part => ids.Contains(part.Id));
+         if (result is null)
+            return null;
+         if (result.ToList().Count > 0)
+            return null;
+         await Parallel.ForEachAsync(data, async (part, token) =>
+         {
+            if (token.IsCancellationRequested)
+               return;
+            var success = await AddToDatabaseAsync(part);
+            var index = partData.IndexOf(part);
+            status.Insert(index, success);
+         });
+         return status;
+      }
 
-      public async Task UpdateDatabaseAsync(IEnumerable<IBinModel> data) => throw new NotImplementedException();
-      public async Task UpdateDatabaseAsync(string id, IBinModel data) => throw new NotImplementedException();
+      public async Task<bool> UpdateDatabaseAsync(string id, IBinModel data)
+      {
+         var filter = Builders<IBinModel>.Filter.Where(x => id == x.Id);
+         var result = await Collection.FindAsync(filter);
+         if (result is null)
+         {
+            return await AddToDatabaseAsync(data);
+         }
+         var replaceResult = await Collection.ReplaceOneAsync(filter, data);
+         return replaceResult is null ? false : replaceResult.ModifiedCount > 0;
+      }
+      public async Task<IEnumerable<bool>?> UpdateDatabaseAsync(IEnumerable<IBinModel> data)
+      {
+         var results = new List<bool>();
+         var partData = data.ToList();
+         await Parallel.ForEachAsync(data, async (d, token) =>
+         {
+            if (token.IsCancellationRequested)
+               return;
+            var success = await UpdateDatabaseAsync(d.Id, d);
+            var index = partData.IndexOf(d);
+            results.Insert(index, success);
+         });
+         return results;
+      }
 
-      public async Task<int> DeleteFromDatabaseAsync(string[] id) => throw new NotImplementedException();
-      public async Task<bool> DeleteFromDatabaseAsync(string id) => throw new NotImplementedException();
+      public async Task<bool> DeleteFromDatabaseAsync(string id)
+      {
+         var result = await Collection.DeleteOneAsync((p) => p.Id == id);
+         return result is null ? false : result.DeletedCount > 0;
+      }
+      public async Task<int> DeleteFromDatabaseAsync(string[] ids)
+      {
+         var result = await Collection.DeleteManyAsync((p) => ids.Contains(p.Id));
+         return result is null ? 0 : (int)result.DeletedCount;
+      }
       #endregion
 
       #region Full Props

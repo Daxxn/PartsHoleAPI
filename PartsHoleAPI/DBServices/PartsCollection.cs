@@ -43,46 +43,57 @@ namespace PartsHoleAPI.DBServices
          return result is null ? null : (IEnumerable<IPartModel>)await result.ToListAsync();
       }
 
-      public async Task<IPartModel?> AddToDatabaseAsync(IPartModel data)
+      public async Task<bool> AddToDatabaseAsync(IPartModel data)
       {
          var filter = Builders<IPartModel>.Filter.Eq("Id", data.Id);
          if (await Collection.Find(filter).FirstOrDefaultAsync() is null)
          {
             await Collection.InsertOneAsync(data);
+            return true;
          }
-         return data;
+         return false;
       }
-      public async Task<IEnumerable<IPartModel>?> AddToDatabaseAsync(IEnumerable<IPartModel> data)
+      public async Task<IEnumerable<bool>?> AddToDatabaseAsync(IEnumerable<IPartModel> data)
       {
+         var status = new List<bool>();
+         var partData = data.ToList();
          var ids = data.Select(x => x.Id).ToList();
          var result = await Collection.FindAsync(part => ids.Contains(part.Id));
-         if (result is null) return Enumerable.Empty<IPartModel>();
-         if (result.ToList().Count > 0) return Enumerable.Empty<IPartModel>();
+         if (result is null) return null;
+         if (result.ToList().Count > 0) return null;
          await Parallel.ForEachAsync(data, async (part, token) =>
          {
-            await AddToDatabaseAsync(part);
+            if (token.IsCancellationRequested) return;
+            var success = await AddToDatabaseAsync(part);
+            var index = partData.IndexOf(part);
+            status.Insert(index, success);
          });
-         return data;
+         return status;
       }
 
-      public async Task UpdateDatabaseAsync(string id, IPartModel data)
+      public async Task<bool> UpdateDatabaseAsync(string id, IPartModel data)
       {
          var filter = Builders<IPartModel>.Filter.Where(x => id == x.Id);
          var result = await Collection.FindAsync(filter);
          if (result is null)
          {
-            await AddToDatabaseAsync(data);
-            return;
+            return await AddToDatabaseAsync(data);
          }
-         await Collection.ReplaceOneAsync(filter, data);
+         var replaceResult = await Collection.ReplaceOneAsync(filter, data);
+         return replaceResult is null ? false : replaceResult.ModifiedCount > 0;
       }
-      public async Task UpdateDatabaseAsync(IEnumerable<IPartModel> data)
+      public async Task<IEnumerable<bool>?> UpdateDatabaseAsync(IEnumerable<IPartModel> data)
       {
+         var results = new List<bool>();
+         var partData = data.ToList();
          await Parallel.ForEachAsync(data, async (d, token) =>
          {
             if (token.IsCancellationRequested) return;
-            await UpdateDatabaseAsync(d.Id, d);
+            var success = await UpdateDatabaseAsync(d.Id, d);
+            var index = partData.IndexOf(d);
+            results.Insert(index, success);
          });
+         return results;
       }
 
       public async Task<bool> DeleteFromDatabaseAsync(string id)

@@ -10,7 +10,7 @@ namespace PartsHoleLib
       #region Local
       [BsonId]
       [BsonRepresentation(BsonType.ObjectId)]
-      public string? Id { get; set; }
+      public string Id { get; set; } = null!;
       public string SupplierPartNumber { get; set; } = null!;
       public string PartNumber { get; set; } = null!;
       public string? Description { get; set; }
