@@ -4,29 +4,27 @@ using MongoDB.Driver;
 
 using PartsHoleAPI.Utils;
 
-using PartsHoleLib;
 using PartsHoleLib.Interfaces;
 
 namespace PartsHoleAPI.DBServices
 {
-   public class BinCollection : ICollectionService<IBinModel>
+   public class CollectionService<T> : ICollectionService<T> where T : class, IModel
    {
       #region Local Props
-      public IMongoCollection<IBinModel> Collection { get; init; }
+      public IMongoCollection<T> Collection { get; init; }
       #endregion
 
       #region Constructors
-      public BinCollection(IOptions<DatabaseSettings> settings)
+      public CollectionService(IOptions<DatabaseSettings> settings)
       {
+         var str = settings.Value.GetCollection<T>();
          var client = new MongoClient(settings.Value.ConnectionString);
-         Collection = client
-            .GetDatabase(settings.Value.Name)
-            .GetCollection<IBinModel>(settings.Value.BinCollection);
+         Collection = client.GetDatabase(settings.Value.Name).GetCollection<T>(str);
       }
       #endregion
 
       #region Methods
-      public async Task<IBinModel?> GetFromDatabaseAsync(string id)
+      public async Task<T?> GetFromDatabaseAsync(string id)
       {
          var result = await Collection.FindAsync(part => part.Id == id);
          if (result is null)
@@ -35,18 +33,17 @@ namespace PartsHoleAPI.DBServices
          if (parts is null)
             return null;
          if (parts.Count > 1)
-            throw new Exception("Multiple invoices found with that ID. Something is horribly wrong!!");
+            throw new Exception("Multiple parts found with that ID. Something is horribly wrong!!");
          return parts[0];
       }
-      public async Task<IEnumerable<IBinModel>?> GetFromDatabaseAsync(string[] ids)
+      public async Task<IEnumerable<T>?> GetFromDatabaseAsync(string[] ids)
       {
          var result = await Collection.FindAsync(part => ids.Contains(part.Id));
-         return result is null ? null : (IEnumerable<IBinModel>)await result.ToListAsync();
+         return result is null ? null : result.ToEnumerable();
       }
-
-      public async Task<bool> AddToDatabaseAsync(IBinModel data)
+      public async Task<bool> AddToDatabaseAsync(T data)
       {
-         var filter = Builders<IBinModel>.Filter.Eq("Id", data.Id);
+         var filter = Builders<T>.Filter.Eq("Id", data.Id);
          if (await Collection.Find(filter).FirstOrDefaultAsync() is null)
          {
             await Collection.InsertOneAsync(data);
@@ -54,7 +51,7 @@ namespace PartsHoleAPI.DBServices
          }
          return false;
       }
-      public async Task<IEnumerable<bool>?> AddToDatabaseAsync(IEnumerable<IBinModel> data)
+      public async Task<IEnumerable<bool>?> AddToDatabaseAsync(IEnumerable<T> data)
       {
          var status = new List<bool>();
          var partData = data.ToList();
@@ -74,10 +71,9 @@ namespace PartsHoleAPI.DBServices
          });
          return status;
       }
-
-      public async Task<bool> UpdateDatabaseAsync(string id, IBinModel data)
+      public async Task<bool> UpdateDatabaseAsync(string id, T data)
       {
-         var filter = Builders<IBinModel>.Filter.Where(x => id == x.Id);
+         var filter = Builders<T>.Filter.Where(x => id == x.Id);
          var result = await Collection.FindAsync(filter);
          if (result is null)
          {
@@ -86,7 +82,7 @@ namespace PartsHoleAPI.DBServices
          var replaceResult = await Collection.ReplaceOneAsync(filter, data);
          return replaceResult is null ? false : replaceResult.ModifiedCount > 0;
       }
-      public async Task<IEnumerable<bool>?> UpdateDatabaseAsync(IEnumerable<IBinModel> data)
+      public async Task<IEnumerable<bool>?> UpdateDatabaseAsync(IEnumerable<T> data)
       {
          var results = new List<bool>();
          var partData = data.ToList();
@@ -100,7 +96,6 @@ namespace PartsHoleAPI.DBServices
          });
          return results;
       }
-
       public async Task<bool> DeleteFromDatabaseAsync(string id)
       {
          var result = await Collection.DeleteOneAsync((p) => p.Id == id);

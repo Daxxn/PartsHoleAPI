@@ -28,6 +28,11 @@ namespace PartsHoleAPI
             builder.Configuration.GetSection("Database"));
          builder.Services.Configure<Auth0Settings>(
             builder.Configuration.GetSection("Auth0"));
+
+         builder.Services.AddLogging((loggerConfig) =>
+         {
+            loggerConfig.AddConsole();
+         });
          //var auth0 = builder.Configuration.Get<Auth0Settings>();
 
          //builder.Services.AddAuthentication(opt =>
@@ -70,10 +75,14 @@ namespace PartsHoleAPI
          builder.Services.AddScoped<IInvoiceModel, InvoiceModel>();
 
          // Registers the MongoDB Collections with the DI service.
+         //builder.Services.AddSingleton<IUserCollection, UserCollection>();
+         //builder.Services.AddSingleton<ICollectionService<IPartModel>, PartsCollection>();
+         //builder.Services.AddSingleton<ICollectionService<IBinModel>, BinCollection>();
+         //builder.Services.AddSingleton<ICollectionService<IInvoiceModel>, InvoiceCollection>();
          builder.Services.AddSingleton<IUserCollection, UserCollection>();
-         builder.Services.AddSingleton<ICollectionService<IPartModel>, PartsCollection>();
-         builder.Services.AddSingleton<ICollectionService<IBinModel>, BinCollection>();
-         builder.Services.AddSingleton<ICollectionService<IInvoiceModel>, InvoiceCollection>();
+         builder.Services.AddSingleton<ICollectionService<IPartModel>, CollectionService<IPartModel>>();
+         builder.Services.AddSingleton<ICollectionService<IBinModel>, CollectionService<IBinModel>>();
+         builder.Services.AddSingleton<ICollectionService<IInvoiceModel>, CollectionService<IInvoiceModel>>();
 
          var app = builder.Build();
 
