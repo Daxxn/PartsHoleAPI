@@ -14,6 +14,7 @@ using SharpCompress.Common;
 using static MongoDB.Driver.WriteConcern;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using PartsHoleModelLibrary;
+using MongoDB.Bson;
 
 namespace PartsHoleAPI
 {
@@ -23,16 +24,24 @@ namespace PartsHoleAPI
       {
          var builder = WebApplication.CreateBuilder(args);
 
-         // Add services to the container.
+         #region Add config variables to Services
          builder.Services.Configure<DatabaseSettings>(
             builder.Configuration.GetSection("Database"));
          builder.Services.Configure<Auth0Settings>(
             builder.Configuration.GetSection("Auth0"));
+         #endregion
 
+         #region Add Logging to Services
          builder.Services.AddLogging((loggerConfig) =>
          {
+#if DEBUG
             loggerConfig.AddConsole();
+            loggerConfig.AddDebug();
+#endif
          });
+         #endregion
+
+         #region Add Auth0 Authentication to Services
          //var auth0 = builder.Configuration.Get<Auth0Settings>();
 
          //builder.Services.AddAuthentication(opt =>
@@ -44,13 +53,15 @@ namespace PartsHoleAPI
          //   opt.Authority = builder.Configuration["Auth0:Authority"];
          //   opt.Audience = builder.Configuration["Auth0:Audience"];
          //});
+         #endregion
 
          builder.Services.AddControllers();
          // OpenAPI : https://aka.ms/aspnetcore/swashbuckle
          builder.Services.AddEndpointsApiExplorer();
          builder.Services.AddSwaggerGen();
 
-         // Configures the MongoDB document serializers to accept the model interfaces.
+         #region Configure MongoDB Serializers
+         // Configures the MongoDB document serializers to accept model interfaces.
          BsonSerializer.RegisterSerializer(
             new ImpliedImplementationInterfaceSerializer<IUserModel, UserModel>(
                BsonSerializer.LookupSerializer<UserModel>()));
@@ -66,43 +77,40 @@ namespace PartsHoleAPI
          BsonSerializer.RegisterSerializer(
             new ImpliedImplementationInterfaceSerializer<IUserData, UserData>(
                BsonSerializer.LookupSerializer<UserData>()));
+         #endregion
 
+         #region Register models
          // Registers the models with the DI service.
          builder.Services.AddScoped<IUserModel, UserModel>();
          builder.Services.AddScoped<IUserData, UserData>();
          builder.Services.AddScoped<IPartModel, PartModel>();
          builder.Services.AddScoped<IBinModel, BinModel>();
          builder.Services.AddScoped<IInvoiceModel, InvoiceModel>();
+         #endregion
 
+         #region Register MongoDB Collection Wrappers
          // Registers the MongoDB Collections with the DI service.
-         //builder.Services.AddSingleton<IUserCollection, UserCollection>();
-         //builder.Services.AddSingleton<ICollectionService<IPartModel>, PartsCollection>();
-         //builder.Services.AddSingleton<ICollectionService<IBinModel>, BinCollection>();
-         //builder.Services.AddSingleton<ICollectionService<IInvoiceModel>, InvoiceCollection>();
          builder.Services.AddSingleton<IUserCollection, UserCollection>();
          builder.Services.AddSingleton<ICollectionService<IPartModel>, CollectionService<IPartModel>>();
          builder.Services.AddSingleton<ICollectionService<IBinModel>, CollectionService<IBinModel>>();
          builder.Services.AddSingleton<ICollectionService<IInvoiceModel>, CollectionService<IInvoiceModel>>();
+         #endregion
 
          var app = builder.Build();
 
-         // Configure the HTTP request pipeline.
+         #region Configure HTTP request pipeline.
          if (app.Environment.IsDevelopment())
          {
             app.UseSwagger();
             app.UseSwaggerUI();
             app.UseCors((cors) =>
             {
+               // Going to have to figure out What kind of CORS im gonna need.
                cors.WithOrigins(
                   "https://localhost:3000"
                );
             });
          }
-         else
-         {
-            //app.UseCors();
-         }
-
 
          app.UseHttpsRedirection();
 
@@ -111,6 +119,7 @@ namespace PartsHoleAPI
          app.MapControllers();
 
          app.Run();
+         #endregion
       }
    }
 }

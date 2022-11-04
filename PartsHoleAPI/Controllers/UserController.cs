@@ -15,16 +15,16 @@ namespace PartsHoleAPI.Controllers
    [ApiController]
    public class UserController : ControllerBase
    {
-      private readonly IUserCollection _userCollection;
+      private readonly IUserCollection _collection;
       private readonly ILogger<UserController> _logger;
 
       public UserController(ILogger<UserController> logger, IUserCollection userCollection)
       {
-         _userCollection = userCollection;
+         _collection = userCollection;
          _logger = logger;
       }
 
-      // GET: api/<UserController>
+      // GET: api/User
       [HttpGet]
       public ActionResult<string> Get()
       {
@@ -32,7 +32,7 @@ namespace PartsHoleAPI.Controllers
          return Ok("Not allowed. A User ID is required.");
       }
 
-      // GET api/<UserController>/{id}
+      // GET api/User/{id}
       [HttpGet("{id:length(24)}")]
       public async Task<ActionResult<IUserModel>> Get(string id)
       {
@@ -41,12 +41,12 @@ namespace PartsHoleAPI.Controllers
             StatusCode(StatusCodes.Status400BadRequest);
             return BadRequest(id);
          }
-         var user = await _userCollection.GetFromDatabaseAsync(id);
+         var user = await _collection.GetFromDatabaseAsync(id);
          if (user is null) return NotFound(id);
          return Ok(user);
       }
 
-      // POST api/<UserController>/data
+      // POST api/User/data
       [HttpPost("data")]
       public async Task<ActionResult<IUserData>> PostGetUserData([FromBody] UserModel user)
       {
@@ -60,13 +60,13 @@ namespace PartsHoleAPI.Controllers
             _logger.LogWarning("No parts or invoice data found.");
             return BadRequest("User has no data.");
          }
-         var response = await _userCollection.GetUserDataFromDatabaseAsync(user);
+         var response = await _collection.GetUserDataFromDatabaseAsync(user);
          return response is null
             ? NotFound("No user data found Found")
             : Ok(response);
       }
 
-      // POST api/<UserController>
+      // POST api/User
       [HttpPost]
       public async Task<ActionResult<bool>> Post([FromBody] UserModel? value)
       {
@@ -80,21 +80,21 @@ namespace PartsHoleAPI.Controllers
             _logger.LogWarning("User model has no valid ID.");
             return BadRequest(false);
          }
-         return Ok(await _userCollection.AddToDatabaseAsync(value));
+         return Ok(await _collection.AddToDatabaseAsync(value));
       }
 
-      // PUT api/<UserController>/{id}
+      // PUT api/User/{id}
       [HttpPut("{id:length(24)}")]
       public async Task<ActionResult<bool>> Put(string id, [FromBody] UserModel? value) =>
          value is null || string.IsNullOrEmpty(id)
             ? (ActionResult<bool>)BadRequest(false)
-            : (ActionResult<bool>)Ok(await _userCollection.UpdateDatabaseAsync(id, value));
+            : (ActionResult<bool>)Ok(await _collection.UpdateDatabaseAsync(id, value));
 
-      // DELETE api/<UserController>/{id}
+      // DELETE api/User/{id}
       [HttpDelete("{id:length(24)}")]
       public async Task<ActionResult<bool>> Delete(string id) => 
          string.IsNullOrEmpty(id)
             ? (ActionResult<bool>)BadRequest(false)
-            : await _userCollection.DeleteFromDatabaseAsync(id) ? Ok(true) : BadRequest(false);
+            : await _collection.DeleteFromDatabaseAsync(id) ? Ok(true) : BadRequest(false);
    }
 }

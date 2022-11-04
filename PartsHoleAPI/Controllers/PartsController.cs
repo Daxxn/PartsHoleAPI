@@ -12,14 +12,14 @@ namespace PartsHoleAPI.Controllers
    public class PartsController : ControllerBase
    {
       #region Props
-      private readonly ICollectionService<IPartModel> _partsCollection;
+      private readonly ICollectionService<IPartModel> _collection;
       private readonly ILogger<PartsController> _logger;
       #endregion
 
       #region Constructors
       public PartsController(ILogger<PartsController> logger, ICollectionService<IPartModel> partsCollection)
       {
-         _partsCollection = partsCollection;
+         _collection = partsCollection;
          _logger = logger;
       }
       #endregion
@@ -33,12 +33,12 @@ namespace PartsHoleAPI.Controllers
          return Ok("Not allowed. A part ID is required.");
       }
 
-      // GET api/<PartsController>/5
+      // GET api/<PartsController>/{id}
       [HttpGet("{id:length(24)}")]
       public async Task<ActionResult<IPartModel?>> Get(string id)
       {
          if (string.IsNullOrEmpty(id)) return BadRequest();
-         return Ok(await _partsCollection.GetFromDatabaseAsync(id));
+         return Ok(await _collection.GetFromDatabaseAsync(id));
       }
 
       // POST api/<PartsController>
@@ -47,7 +47,7 @@ namespace PartsHoleAPI.Controllers
       public async Task<ActionResult> Post([FromBody] PartModel? value)
       {
          if (value is null) return BadRequest(false);
-         return Ok(await _partsCollection.AddToDatabaseAsync(value));
+         return Ok(await _collection.AddToDatabaseAsync(value));
       }
 
       // POST api/<PartsController>/many
@@ -56,7 +56,7 @@ namespace PartsHoleAPI.Controllers
       public async Task<ActionResult> PostMany([FromBody] PartModel[] parts)
       {
          if (parts is null) return BadRequest();
-         return Ok(await _partsCollection.AddToDatabaseAsync(parts));
+         return Ok(await _collection.AddToDatabaseAsync(parts));
       }
 
       // PUT api/<PartsController>/{id}
@@ -66,7 +66,7 @@ namespace PartsHoleAPI.Controllers
       {
          if (string.IsNullOrEmpty(id)) return BadRequest(false);
          if (id.Length != 24) return BadRequest(false);
-         return Ok(await _partsCollection.UpdateDatabaseAsync(id, value));
+         return Ok(await _collection.UpdateDatabaseAsync(id, value));
       }
 
       // DELETE api/<PartsController>/{id}
@@ -75,7 +75,7 @@ namespace PartsHoleAPI.Controllers
       {
          if (string.IsNullOrEmpty(id)) return BadRequest(false);
          if (id.Length != 24) return BadRequest(false);
-         return Ok(await _partsCollection.DeleteFromDatabaseAsync(id));
+         return Ok(await _collection.DeleteFromDatabaseAsync(id));
       }
 
       // DELETE api/<PartsController>/many
@@ -87,7 +87,7 @@ namespace PartsHoleAPI.Controllers
             return BadRequest(false);
          if (ids.Length == 0)
             return BadRequest(false);
-         return Ok(await _partsCollection.DeleteFromDatabaseAsync(ids));
+         return Ok(await _collection.DeleteFromDatabaseAsync(ids));
       }
       #endregion
    }
