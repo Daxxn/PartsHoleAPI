@@ -85,6 +85,14 @@ namespace PartsHoleAPI.Controllers
          return Ok(new APIResponse<bool>(await _collection.UpdateDatabaseAsync(id, updatedPart), "PUT"));
       }
 
+      [HttpPut("many")]
+      public async Task<ActionResult<APIResponse<IEnumerable<bool>?>>> PutMany([FromBody] PartModel[] updatedParts)
+      {
+         if (updatedParts is null) return BadRequest(new APIResponse<IEnumerable<bool>?>(null, "PUT", "No parts found."));
+         if (updatedParts.Length <= 0) return BadRequest(new APIResponse<IEnumerable<bool>?>(null, "PUT", "No parts in array."));
+         return Ok(new APIResponse<IEnumerable<bool>?>(await _collection.AddToDatabaseAsync(updatedParts), "PUT"));
+      }
+
       // DELETE api/Parts/{id}
       [HttpDelete("{id:length(24)}")]
       public async Task<ActionResult<APIResponse<bool>>> Delete(string id)

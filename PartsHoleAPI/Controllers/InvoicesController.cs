@@ -6,6 +6,8 @@ using PartsHoleAPI.DBServices;
 using PartsHoleLib;
 using PartsHoleLib.Interfaces;
 
+using PartsHoleRestLibrary.Responses;
+
 namespace PartsHoleAPI.Controllers
 {
    [Route("api/[controller]")]
@@ -66,36 +68,36 @@ namespace PartsHoleAPI.Controllers
       // PUT api/Invoices/{id}
       // Body : InvoiceModel updatedInvoice
       [HttpPut("{id:length(24)}")]
-      public async Task<ActionResult> Put(string id, [FromBody] InvoiceModel updatedInvoice)
+      public async Task<ActionResult<APIResponse<bool>>> Put(string id, [FromBody] InvoiceModel updatedInvoice)
       {
          if (string.IsNullOrEmpty(id))
-            return BadRequest(false);
+            return BadRequest(new APIResponse<bool>(false, "PUT", "ID not found"));
          if (id.Length != 24)
-            return BadRequest(false);
-         return Ok(await _collection.UpdateDatabaseAsync(id, updatedInvoice));
+            return BadRequest(new APIResponse<bool>(false, "PUT", "ID not valid"));
+         return Ok(new APIResponse<bool>(await _collection.UpdateDatabaseAsync(id, updatedInvoice), "PUT"));
       }
 
       // DELETE api/Invoices/{id}
       [HttpDelete("{id:length(24)}")]
-      public async Task<ActionResult> Delete(string id)
+      public async Task<ActionResult<APIResponse<bool>>> Delete(string id)
       {
          if (string.IsNullOrEmpty(id))
-            return BadRequest(false);
+            return BadRequest(new APIResponse<bool>(false, "DELETE", "ID not found"));
          if (id.Length != 24)
-            return BadRequest(false);
-         return Ok(await _collection.DeleteFromDatabaseAsync(id));
+            return BadRequest(new APIResponse<bool>(false, "DELETE", "ID not valid"));
+         return Ok(new APIResponse<bool>(await _collection.DeleteFromDatabaseAsync(id), "DELETE"));
       }
 
       // DELETE api/Invoices/many
       // Body : string[] ids
       [HttpDelete("many")]
-      public async Task<ActionResult> DeleteMany(string[] ids)
+      public async Task<ActionResult<APIResponse<int>>> DeleteMany(string[] ids)
       {
          if (ids is null)
-            return BadRequest(false);
+            return BadRequest(new APIResponse<int>(0, "DELETE", "IDs not found"));
          if (ids.Length == 0)
-            return BadRequest(false);
-         return Ok(await _collection.DeleteFromDatabaseAsync(ids));
+            return BadRequest(new APIResponse<int>(0, "DELETE", "IDs empty"));
+         return Ok(new APIResponse<int>(await _collection.DeleteFromDatabaseAsync(ids), "DELETE"));
       }
       #endregion
    }

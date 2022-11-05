@@ -75,10 +75,8 @@ namespace PartsHoleAPI.DBServices
       {
          var filter = Builders<T>.Filter.Where(x => id == x.Id);
          var result = await Collection.FindAsync(filter);
-         if (result is null)
-         {
-            return await AddToDatabaseAsync(data);
-         }
+         if (result is null) throw new Exception("Find failed.");
+         if (result.FirstOrDefault() is null) return await AddToDatabaseAsync(data);
          var replaceResult = await Collection.ReplaceOneAsync(filter, data);
          return replaceResult is null ? false : replaceResult.ModifiedCount > 0;
       }
@@ -90,7 +88,12 @@ namespace PartsHoleAPI.DBServices
          {
             if (token.IsCancellationRequested)
                return;
-            var success = await UpdateDatabaseAsync(d.Id, d);
+            var success = false;
+            if (!string.IsNullOrEmpty(d.Id))
+            {
+               success = await UpdateDatabaseAsync(d.Id, d);
+               return;
+            }
             var index = partData.IndexOf(d);
             results.Insert(index, success);
          });

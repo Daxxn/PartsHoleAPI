@@ -8,9 +8,11 @@ namespace PartsHoleLib.Interfaces
    public interface IInvoiceModel : IModel
    {
       int OrderNumber { get; set; }
-      List<IPartModel> Parts { get; set; }
+      [BsonRepresentation(BsonType.ObjectId)]
+      List<string> Parts { get; set; }
       string? Path { get; set; }
       decimal SubTotal { get; set; }
-      SupplierType? SupplierType { get; set; }
+      int? SupplierType { get; set; }
+      bool IsAddedToParts { get; set; }
    }
 }
