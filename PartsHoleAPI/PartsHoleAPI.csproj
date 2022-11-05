@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\PartsHoleModelLibrary\PartsHoleModelLibrary.csproj" />
+    <ProjectReference Include="..\PartsHoleRestLibrary\PartsHoleRestLibrary.csproj" />
   </ItemGroup>
 
 </Project>

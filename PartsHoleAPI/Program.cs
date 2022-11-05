@@ -15,6 +15,8 @@ using static MongoDB.Driver.WriteConcern;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using PartsHoleModelLibrary;
 using MongoDB.Bson;
+using PartsHoleRestLibrary.Responses;
+using Swashbuckle.AspNetCore.Swagger;
 
 namespace PartsHoleAPI
 {
