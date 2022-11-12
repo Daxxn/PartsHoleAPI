@@ -8,6 +8,6 @@ namespace PartsHoleLib.Interfaces
    {
       [BsonId]
       [BsonRepresentation(BsonType.ObjectId)]
-      string Id { get; set; }
+      string _id { get; set; }
    }
 }

@@ -7,6 +7,9 @@ namespace PartsHoleLib.Interfaces
 {
    public interface IPartModel : IModel
    {
+      [BsonId]
+      [BsonRepresentation(BsonType.ObjectId)]
+      new string _id { get; set; }
       string PartNumber { get; set; }
       string SupplierPartNumber { get; set; }
       string? Reference { get; set; }

@@ -8,7 +8,7 @@ namespace PartsHoleLib
    {
       [BsonId]
       [BsonRepresentation(BsonType.ObjectId)]
-      public string Id { get; set; } = null!;
+      public string _id { get; set; } = null!;
       public string UserName { get; set; } = null!;
       public string AuthID { get; set; } = null!;
       public string? Email { get; set; }

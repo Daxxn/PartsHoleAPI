@@ -9,6 +9,8 @@ using PartsHoleAPI.DBServices;
 using PartsHoleLib;
 using PartsHoleLib.Interfaces;
 
+using PartsHoleModelLibrary;
+
 using PartsHoleRestLibrary.Requests;
 using PartsHoleRestLibrary.Responses;
 
@@ -61,22 +63,22 @@ public class UserController : ControllerBase
 
    // POST api/User/data
    [HttpPost("data")]
-   public async Task<ActionResult<IUserData>> PostGetUserData([FromBody] UserModel user)
+   public async Task<ActionResult<APIResponse<IUserData?>>> PostGetUserData([FromBody] UserModel user)
    {
       if (user is null)
       {
          _logger.LogWarning("Unable to construct user model from body.");
-         return BadRequest("No user data found in body.");
+         return BadRequest(new APIResponse<IUserData?>("POST", "No user data found in body."));
       }
       if (user.Parts is null && user.Invoices is null)
       {
          _logger.LogWarning("No parts or invoice data found.");
-         return BadRequest("User has no data.");
+         return BadRequest(new APIResponse<IUserData?>("POST", "User has no data."));
       }
       var response = await _collection.GetUserDataFromDatabaseAsync(user);
       return response is null
-         ? NotFound("No user data found Found")
-         : Ok(response);
+         ? NotFound(new APIResponse<IUserData?>("POST", "No user data found Found"))
+         : Ok(new APIResponse<IUserData?>(response, "POST"));
    }
 
    // POST api/User
@@ -88,7 +90,7 @@ public class UserController : ControllerBase
          _logger.LogWarning("Unable to construct user model from body.");
          return BadRequest(new APIResponse<bool>(false, "POST", "Unable to construct user model from body."));
       }
-      if (string.IsNullOrEmpty(value.Id))
+      if (string.IsNullOrEmpty(value._id))
       {
          _logger.LogWarning("User model has no valid ID.");
          return BadRequest(new APIResponse<bool>(false, "POST", "User model has no valid ID."));
@@ -137,11 +139,11 @@ public class UserController : ControllerBase
    }
 
    // PUT api/User/{id}
-   [HttpPut("{id:length(24)}")]
-   public async Task<ActionResult<APIResponse<bool>>> Put(string id, [FromBody] UserModel value) =>
-      value is null || string.IsNullOrEmpty(id)
-         ? BadRequest(new APIResponse<bool>(false, "PUT", "Unable to find user ID."))
-         : Ok(new APIResponse<bool>(await _collection.UpdateDatabaseAsync(id, value), "PUT"));
+   [HttpPut]
+   public async Task<ActionResult<APIResponse<bool>>> Put([FromBody] UserModel value) =>
+      value is null
+         ? BadRequest(new APIResponse<bool>(false, "PUT", "Unable to find user."))
+         : Ok(new APIResponse<bool>(await _collection.UpdateDatabaseAsync(value._id, value), "PUT"));
 
    // DELETE api/User/{id}
    [HttpDelete("{id:length(24)}")]
