@@ -7,7 +7,16 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PartsHoleAPI", "PartsHoleAP
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PartsHoleModelLibrary", "PartsHoleModelLibrary\PartsHoleModelLibrary.csproj", "{F8DA8E17-5136-4C4E-B517-EE228AB6437C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PartsHoleRestLibrary", "PartsHoleRestLibrary\PartsHoleRestLibrary.csproj", "{F3513F56-A08E-47B0-A4A6-A7417C617141}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PartsHoleRestLibrary", "PartsHoleRestLibrary\PartsHoleRestLibrary.csproj", "{F3513F56-A08E-47B0-A4A6-A7417C617141}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{D72F03C5-D091-4520-943C-299D70D974AB}"
+	ProjectSection(SolutionItems) = preProject
+		.dockerignore = .dockerignore
+		.gitattributes = .gitattributes
+		.gitignore = .gitignore
+		LICENSE.txt = LICENSE.txt
+		README.md = README.md
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

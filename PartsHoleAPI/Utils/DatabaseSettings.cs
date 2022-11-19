@@ -5,20 +5,27 @@ using PartsHoleModelLibrary;
 
 namespace PartsHoleAPI.Utils
 {
-   public class DatabaseSettings : IDatabaseSettings
+   public class DatabaseSettings
    {
       #region Local Props
-      public string ConnectionString { get; set; } = null!;
+      private string _connectionString = null!;
+      public string ConnectionStringTemplate { get; set; } = null!;
 
-      public string Name { get; set; } = null!;
+      public string DatabaseName { get; set; } = null!;
 
       public string PartsCollection { get; set; } = null!;
       public string UsersCollection { get; set; } = null!;
-      public string BinCollection { get; set; } = null!;
-      public string InvoiceCollection { get; set; } = null!;
-      #endregion
+      public string BinsCollection { get; set; } = null!;
+      public string InvoicesCollection { get; set; } = null!;
 
-      #region Constructors
+      public string DevelopmentUserName { get; set; } = null!;
+      public string DevelopmentPassword { get; set; } = null!;
+      public string ProductionUserName { get; set; } = null!;
+      public string ProductionPassword { get; set; } = null!;
+
+      public DatabaseSettings()
+      {
+      }
       #endregion
 
       #region Methods
@@ -26,11 +33,11 @@ namespace PartsHoleAPI.Utils
       {
          if (typeof(T) == typeof(IBinModel))
          {
-            return BinCollection;
+            return BinsCollection;
          }
          else if (typeof(T) == typeof(IInvoiceModel))
          {
-            return InvoiceCollection;
+            return InvoicesCollection;
          }
          else if (typeof(T) == typeof(IPartModel))
          {
@@ -45,7 +52,25 @@ namespace PartsHoleAPI.Utils
       #endregion
 
       #region Full Props
-
+      public string ConnectionString
+      {
+         get
+         {
+            if (_connectionString is null)
+            {
+#if DEBUG
+               _connectionString = ConnectionStringTemplate.Replace("<username>", DevelopmentUserName).Replace("<password>", DevelopmentPassword);
+#else
+               _connectionString = ConnectionStringTemplate.Replace("<username>", ProductionUserName).Replace("<password>", ProductionPassword);
+#endif
+            }
+            return _connectionString;
+         }
+         set
+         {
+            _connectionString = value;
+         }
+      }
       #endregion
    }
 }

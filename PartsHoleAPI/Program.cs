@@ -62,8 +62,9 @@ namespace PartsHoleAPI
          builder.Services.AddEndpointsApiExplorer();
          builder.Services.AddSwaggerGen();
 
+         builder.Services.AddRouting((options) => options.LowercaseUrls = true);
+
          #region Configure MongoDB Serializers
-         // Configures the MongoDB document serializers to accept model interfaces.
          BsonSerializer.RegisterSerializer(
             new ImpliedImplementationInterfaceSerializer<IUserModel, UserModel>(
                BsonSerializer.LookupSerializer<UserModel>()));
@@ -82,7 +83,6 @@ namespace PartsHoleAPI
          #endregion
 
          #region Register models
-         // Registers the models with the DI service.
          builder.Services.AddScoped<IUserModel, UserModel>();
          builder.Services.AddScoped<IUserData, UserData>();
          builder.Services.AddScoped<IPartModel, PartModel>();
@@ -91,7 +91,6 @@ namespace PartsHoleAPI
          #endregion
 
          #region Register MongoDB Collection Wrappers
-         // Registers the MongoDB Collections with the DI service.
          builder.Services.AddSingleton<IUserCollection, UserCollection>();
          builder.Services.AddSingleton<ICollectionService<IPartModel>, CollectionService<IPartModel>>();
          builder.Services.AddSingleton<ICollectionService<IBinModel>, CollectionService<IBinModel>>();

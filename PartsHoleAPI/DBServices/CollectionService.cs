@@ -19,7 +19,7 @@ public class CollectionService<T> : ICollectionService<T> where T : class, IMode
    {
       var str = settings.Value.GetCollection<T>();
       var client = new MongoClient(settings.Value.ConnectionString);
-      Collection = client.GetDatabase(settings.Value.Name).GetCollection<T>(str);
+      Collection = client.GetDatabase(settings.Value.DatabaseName).GetCollection<T>(str);
    }
    #endregion
 

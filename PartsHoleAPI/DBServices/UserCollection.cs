@@ -24,10 +24,10 @@ public class UserCollection : IUserCollection
    public UserCollection(IOptions<DatabaseSettings> settings)
    {
       var client = new MongoClient(settings.Value.ConnectionString);
-      var db = client.GetDatabase(settings.Value.Name);
+      var db = client.GetDatabase(settings.Value.DatabaseName);
       Collection = db.GetCollection<IUserModel>(settings.Value.UsersCollection);
       PartsCollection = db.GetCollection<IPartModel>(settings.Value.PartsCollection);
-      InvoicesCollection = db.GetCollection<IInvoiceModel>(settings.Value.InvoiceCollection);
+      InvoicesCollection = db.GetCollection<IInvoiceModel>(settings.Value.InvoicesCollection);
    }
    #endregion
 
