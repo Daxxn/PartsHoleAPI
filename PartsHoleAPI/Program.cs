@@ -1,8 +1,5 @@
-using Microsoft.Extensions.Configuration;
-
-using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Bson.Serialization;
-using MongoDB.Driver;
+using MongoDB.Bson.Serialization.Serializers;
 
 using PartsHoleAPI.DBServices;
 using PartsHoleAPI.Utils;
@@ -10,13 +7,7 @@ using PartsHoleAPI.Utils;
 using PartsHoleLib;
 using PartsHoleLib.Interfaces;
 
-using SharpCompress.Common;
-using static MongoDB.Driver.WriteConcern;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using PartsHoleModelLibrary;
-using MongoDB.Bson;
-using PartsHoleRestLibrary.Responses;
-using Swashbuckle.AspNetCore.Swagger;
 
 namespace PartsHoleAPI
 {

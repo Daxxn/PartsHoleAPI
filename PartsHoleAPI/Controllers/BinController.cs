@@ -1,11 +1,12 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
 using PartsHoleAPI.DBServices;
-using PartsHoleRestLibrary.Requests;
-using PartsHoleRestLibrary.Responses;
 
 using PartsHoleLib;
 using PartsHoleLib.Interfaces;
+
+using PartsHoleRestLibrary.Responses;
+using MongoDB.Bson;
 
 namespace PartsHoleAPI.Controllers;
 
@@ -24,15 +25,17 @@ public class BinController : ControllerBase
       _logger = logger;
    }
 
-   // GET: api/Bin
-   [HttpGet]
-   public ActionResult<string> Get()
-   {
-      _logger.Log(LogLevel.Debug, "Attempt to call generic GET method.");
-      return Ok("Not allowed. A BIN ID is required.");
-   }
-
-   // GET api/Bin/{id}
+   /// <summary>
+   /// Gets an <see cref="IBinModel"/> based on the given <see cref="ObjectId"/>.
+   /// <list type="table">
+   ///   <item>
+   ///      <term>GET</term>
+   ///      <description>api/bin/{<paramref name="id"/>}</description>
+   ///   </item>
+   /// </list>
+   /// </summary>
+   /// <param name="id"><see cref="ObjectId"/> to search for.</param>
+   /// <returns>BadRequest if unable to get Bin. Otherwise Returns the <see cref="IBinModel"/>.</returns>
    [HttpGet("{id:length(24)}")]
    public async Task<ActionResult<IBinModel?>> Get(string id)
    {
@@ -41,7 +44,21 @@ public class BinController : ControllerBase
       return Ok(await _collection.GetFromDatabaseAsync(id));
    }
 
-   // POST api/Bin
+   /// <summary>
+   /// Create a new <see cref="IBinModel"/> and store it in the database.
+   /// <list type="table">
+   ///   <item>
+   ///      <term>POST</term>
+   ///      <description>api/bin</description>
+   ///   </item>
+   ///   <item>
+   ///      <term>BODY</term>
+   ///      <description><see cref="IBinModel"/> <paramref name="value"/></description>
+   ///   </item>
+   /// </list>
+   /// </summary>
+   /// <param name="value">The new <see cref="BinModel"/> to create.</param>
+   /// <returns>True if successful. Otherwise False.</returns>
    [HttpPost]
    public async Task<ActionResult<APIResponse<bool>>> Post([FromBody] BinModel value)
    {
@@ -50,8 +67,21 @@ public class BinController : ControllerBase
       return Ok(new APIResponse<bool>(await _collection.AddToDatabaseAsync(value), "POST"));
    }
 
-   // POST api/Bin/many
-   // Body : BinModel[] newBins
+   /// <summary>
+   /// Creates many <see cref="IBinModel"/>s based on the data from the message body.
+   /// <list type="table">
+   ///   <item>
+   ///      <term>POST</term>
+   ///      <description>api/bin/many</description>
+   ///   </item>
+   ///   <item>
+   ///      <term>BODY</term>
+   ///      <description><see cref="List{T}"/> of <see cref="IBinModel"/> <paramref name="newBins"/></description>
+   ///   </item>
+   /// </list>
+   /// </summary>
+   /// <param name="newBins"><see cref="IBinModel"/> array from the message body.</param>
+   /// <returns>A matching array of <see cref="bool"/> for each item. (True if successful.)</returns>
    [HttpPost("many")]
    public async Task<ActionResult<APIResponse<IEnumerable<bool>?>>> PostMany([FromBody] BinModel[] newBins)
    {
@@ -63,8 +93,22 @@ public class BinController : ControllerBase
       return Ok(new APIResponse<IEnumerable<bool>?>(results, "POST"));
    }
 
-   // PUT api/Bin/{id}
-   // Body : BinModel updatedBin
+   /// <summary>
+   /// Update an <see cref="IBinModel"/> with an <paramref name="updatedBin"/>.
+   /// <list type="table">
+   ///   <item>
+   ///      <term>PUT</term>
+   ///      <description>api/bin/{<paramref name="id"/>}</description>
+   ///   </item>
+   ///   <item>
+   ///      <term>BODY</term>
+   ///      <description><see cref="IBinModel"/> <paramref name="updatedBin"/></description>
+   ///   </item>
+   /// </list>
+   /// </summary>
+   /// <param name="id"><see cref="ObjectId"/> of the model to update.</param>
+   /// <param name="updatedBin">the updated <see cref="IBinModel"/>.</param>
+   /// <returns>True if successful, otherwise false.</returns>
    [HttpPut("{id:length(24)}")]
    public async Task<ActionResult<APIResponse<bool>>> Put(string id, [FromBody] BinModel updatedBin)
    {
@@ -75,7 +119,17 @@ public class BinController : ControllerBase
       return Ok(new APIResponse<bool>(await _collection.UpdateDatabaseAsync(id, updatedBin), "PUT"));
    }
 
-   // DELETE api/Bin/{id}
+   /// <summary>
+   /// Delete an <see cref="IBinModel"/> based on the <see cref="ObjectId"/>.
+   /// <list type="table">
+   ///   <item>
+   ///      <term>DELETE</term>
+   ///      <description>api/bin/{<paramref name="id"/>}</description>
+   ///   </item>
+   /// </list>
+   /// </summary>
+   /// <param name="id"><see cref="ObjectId"/> of the model to delete.</param>
+   /// <returns>True if successful, otherwise false.</returns>
    [HttpDelete("{id:length(24)}")]
    public async Task<ActionResult<APIResponse<bool>>> Delete(string id)
    {
@@ -86,8 +140,21 @@ public class BinController : ControllerBase
       return Ok(new APIResponse<bool>(await _collection.DeleteFromDatabaseAsync(id), "DELETE"));
    }
 
-   // DELETE api/Bin/many
-   // Body : string[] ids
+   /// <summary>
+   /// Delete multiple <see cref="IBinModel"/>s from a list of <see cref="ObjectId"/>s.
+   /// <list type="table">
+   ///   <item>
+   ///      <term>DELETE</term>
+   ///      <description>api/bin/many</description>
+   ///   </item>
+   ///   <item>
+   ///      <term>BODY</term>
+   ///      <description><see cref="List{T}"/> of <see cref="ObjectId"/>s <paramref name="ids"/></description>
+   ///   </item>
+   /// </list>
+   /// </summary>
+   /// <param name="ids"><see cref="List{T}"/> of <see cref="ObjectId"/>s to delete.</param>
+   /// <returns>Number (<see cref="int"/>) of deleted <see cref="IBinModel"/>s.</returns>
    [HttpDelete("many")]
    public async Task<ActionResult<APIResponse<int>>> DeleteMany(string[] ids)
    {

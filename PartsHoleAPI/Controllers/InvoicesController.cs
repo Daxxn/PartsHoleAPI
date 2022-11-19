@@ -1,5 +1,6 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+
+using MongoDB.Bson;
 
 using PartsHoleAPI.DBServices;
 
@@ -28,15 +29,17 @@ public class InvoicesController : ControllerBase
    #endregion
 
    #region API Methods
-   // GET: api/Invoices
-   [HttpGet]
-   public ActionResult<string> Get()
-   {
-      _logger.LogInformation("Attempt to call generic GET method.");
-      return Ok("Not allowed. A part ID is required.");
-   }
-
-   // GET api/Invoices/{id}
+   /// <summary>
+   /// Gets an <see cref="IInvoiceModel"/> based on the given <see cref="ObjectId"/>.
+   /// <list type="table">
+   ///   <item>
+   ///      <term>GET</term>
+   ///      <description>api/invoices/{<paramref name="id"/>}</description>
+   ///   </item>
+   /// </list>
+   /// </summary>
+   /// <param name="id"><see cref="ObjectId"/> to search for.</param>
+   /// <returns><see cref="IInvoiceModel"/> found. Null if unable.</returns>
    [HttpGet("{id:length(24)}")]
    public async Task<ActionResult<IPartModel?>> Get(string id)
    {
@@ -45,8 +48,21 @@ public class InvoicesController : ControllerBase
       return Ok(await _collection.GetFromDatabaseAsync(id));
    }
 
-   // POST api/Invoices
-   // Body : InvoiceModel newInvoice
+   /// <summary>
+   /// Creates a new <see cref="IInvoiceModel"/>.
+   /// <list type="table">
+   ///   <item>
+   ///      <term>POST</term>
+   ///      <description>api/invoices</description>
+   ///   </item>
+   ///   <item>
+   ///      <term>BODY</term>
+   ///      <description><see cref="IInvoiceModel"/> <paramref name="newInvoice"/></description>
+   ///   </item>
+   /// </list>
+   /// </summary>
+   /// <param name="newInvoice">New <see cref="IInvoiceModel"/> to create.</param>
+   /// <returns><see langword="true"/> if successful, otherwise <see langword="false"/>.</returns>
    [HttpPost]
    public async Task<ActionResult<APIResponse<bool>>> Post([FromBody] InvoiceModel newInvoice)
    {
@@ -66,8 +82,21 @@ public class InvoicesController : ControllerBase
       }
    }
 
-   // POST api/Invoices/many
-   // Body : InvoiceModel[] newInvoices
+   /// <summary>
+   /// Creates multiple <see cref="IInvoiceModel"/>s.
+   /// <list type="table">
+   ///   <item>
+   ///      <term>POST</term>
+   ///      <description>api/invoices/many</description>
+   ///   </item>
+   ///   <item>
+   ///      <term>BODY</term>
+   ///      <description><see cref="List{T}"/> of <see cref="IInvoiceModel"/> <paramref name="newInvoices"/></description>
+   ///   </item>
+   /// </list>
+   /// </summary>
+   /// <param name="newInvoices"><see cref="List{T}"/> of new <see cref="IInvoiceModel"/>s to create.</param>
+   /// <returns><see cref="List{T}"/> of <see cref="bool"/>s where; <see langword="true"/> if successful, otherwise <see langword="false"/>.</returns>
    [HttpPost("many")]
    public async Task<ActionResult<APIResponse<IEnumerable<bool>?>>> PostMany([FromBody] InvoiceModel[] newInvoices)
    {
@@ -86,8 +115,22 @@ public class InvoicesController : ControllerBase
       return Ok(new APIResponse<IEnumerable<bool>?>(response, "POST"));
    }
 
-   // PUT api/Invoices/{id}
-   // Body : InvoiceModel updatedInvoice
+   /// <summary>
+   /// Updates an <see cref="IInvoiceModel"/>.
+   /// <list type="table">
+   ///   <item>
+   ///      <term>PUT</term>
+   ///      <description>api/invoices/{<paramref name="id"/>}</description>
+   ///   </item>
+   ///   <item>
+   ///      <term>BODY</term>
+   ///      <description><see cref="IInvoiceModel"/> <paramref name="updatedInvoice"/></description>
+   ///   </item>
+   /// </list>
+   /// </summary>
+   /// <param name="id"><see cref="ObjectId"/> of the <see cref="IInvoiceModel"/> to update.</param>
+   /// <param name="updatedInvoice">Updated <see cref="IInvoiceModel"/> data.</param>
+   /// <returns><see langword="true"/> if successful, otherwise <see langword="false"/></returns>
    [HttpPut("{id:length(24)}")]
    public async Task<ActionResult<APIResponse<bool>>> Put(string id, [FromBody] InvoiceModel updatedInvoice)
    {
@@ -98,7 +141,17 @@ public class InvoicesController : ControllerBase
       return Ok(new APIResponse<bool>(await _collection.UpdateDatabaseAsync(id, updatedInvoice), "PUT"));
    }
 
-   // DELETE api/Invoices/{id}
+   /// <summary>
+   /// Delete an <see cref="IInvoiceModel"/> from the database.
+   /// <list type="table">
+   ///   <item>
+   ///      <term>DELETE</term>
+   ///      <description>api/invoices/{<paramref name="id"/>}</description>
+   ///   </item>
+   /// </list>
+   /// </summary>
+   /// <param name="id">The <see cref="ObjectId"/> of the <see cref="IInvoiceModel"/> to delete.</param>
+   /// <returns><see langword="true"/> if successful, otherwise <see langword="false"/></returns>
    [HttpDelete("{id:length(24)}")]
    public async Task<ActionResult<APIResponse<bool>>> Delete(string id)
    {
@@ -111,6 +164,21 @@ public class InvoicesController : ControllerBase
 
    // DELETE api/Invoices/many
    // Body : string[] ids
+   /// <summary>
+   /// Delete multiple <see cref="IInvoiceModel"/>s from the database.
+   /// <list type="table">
+   ///   <item>
+   ///      <term>DELETE</term>
+   ///      <description>api/invoices/many</description>
+   ///   </item>
+   ///   <item>
+   ///      <term>BODY</term>
+   ///      <description><see cref="List{T}"/> <see cref="ObjectId"/> <paramref name="ids"/></description>
+   ///   </item>
+   /// </list>
+   /// </summary>
+   /// <param name="ids"><see cref="List{T}"/> of <see cref="ObjectId"/>s to delete.</param>
+   /// <returns>Number (<see cref="int"/>) of <see cref="IInvoiceModel"/>s successfully deleted.</returns>
    [HttpDelete("many")]
    public async Task<ActionResult<APIResponse<int>>> DeleteMany(string[] ids)
    {
