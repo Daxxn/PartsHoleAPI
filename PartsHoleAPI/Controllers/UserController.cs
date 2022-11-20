@@ -9,8 +9,6 @@ using PartsHoleAPI.DBServices;
 using PartsHoleLib;
 using PartsHoleLib.Interfaces;
 
-using PartsHoleModelLibrary;
-
 using PartsHoleRestLibrary.Requests;
 using PartsHoleRestLibrary.Responses;
 

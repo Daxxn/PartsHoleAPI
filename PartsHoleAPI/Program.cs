@@ -1,3 +1,5 @@
+using CSVParserLibrary;
+
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
 
@@ -6,8 +8,6 @@ using PartsHoleAPI.Utils;
 
 using PartsHoleLib;
 using PartsHoleLib.Interfaces;
-
-using PartsHoleModelLibrary;
 
 namespace PartsHoleAPI
 {
@@ -81,11 +81,16 @@ namespace PartsHoleAPI
          builder.Services.AddScoped<IInvoiceModel, InvoiceModel>();
          #endregion
 
-         #region Register MongoDB Collection Wrappers
+         #region Register Transient Models
+         builder.Services.AddTransient<ICSVParserOptions, CSVParserOptions>();
+         builder.Services.AddAbstractFactory<ICSVParser, CSVParser>();
+         #endregion
+
+         #region Register endpoint Services
          builder.Services.AddSingleton<IUserCollection, UserCollection>();
          builder.Services.AddSingleton<ICollectionService<IPartModel>, CollectionService<IPartModel>>();
          builder.Services.AddSingleton<ICollectionService<IBinModel>, CollectionService<IBinModel>>();
-         builder.Services.AddSingleton<ICollectionService<IInvoiceModel>, CollectionService<IInvoiceModel>>();
+         builder.Services.AddSingleton<IInvoiceService, InvoiceService>();
          #endregion
 
          var app = builder.Build();

@@ -1,7 +1,5 @@
-﻿using MongoDB.Bson.Serialization.Attributes;
-using MongoDB.Bson;
-
-using PartsHoleLib.Enums;
+﻿using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
 
 namespace PartsHoleLib.Interfaces
 {
@@ -12,7 +10,7 @@ namespace PartsHoleLib.Interfaces
       new string _id { get; set; }
       int OrderNumber { get; set; }
       [BsonRepresentation(BsonType.ObjectId)]
-      List<string> Parts { get; set; }
+      List<DigiKeyPartModel> Parts { get; set; }
       string? Path { get; set; }
       decimal SubTotal { get; set; }
       int? SupplierType { get; set; }

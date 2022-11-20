@@ -1,8 +1,13 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.Collections;
+
+using CSVParserLibrary;
+
+using Microsoft.AspNetCore.Mvc;
 
 using MongoDB.Bson;
 
 using PartsHoleAPI.DBServices;
+using PartsHoleAPI.Utils;
 
 using PartsHoleLib;
 using PartsHoleLib.Interfaces;
@@ -16,15 +21,25 @@ namespace PartsHoleAPI.Controllers;
 public class InvoicesController : ControllerBase
 {
    #region Local Props
-   private readonly ICollectionService<IInvoiceModel> _collection;
+   private readonly IInvoiceService _invoiceService;
+   private readonly IAbstractFactory<ICSVParser> _parserFactory;
    private readonly ILogger<InvoicesController> _logger;
    #endregion
 
    #region Constructors
-   public InvoicesController(ICollectionService<IInvoiceModel> invoiceCollection, ILogger<InvoicesController> logger)
+   public InvoicesController(
+      IInvoiceService invoiceService,
+      ILogger<InvoicesController> logger,
+      IAbstractFactory<ICSVParser> parserFactory)
    {
-      _collection = invoiceCollection;
+      _invoiceService = invoiceService;
       _logger = logger;
+      _parserFactory = parserFactory;
+      CSVParserStatic.UpdateOptions(new()
+      {
+         IgnoreCase = true,
+         IgnoreLineParseErrors = true,
+      });
    }
    #endregion
 
@@ -45,7 +60,7 @@ public class InvoicesController : ControllerBase
    {
       if (string.IsNullOrEmpty(id))
          return BadRequest();
-      return Ok(await _collection.GetFromDatabaseAsync(id));
+      return Ok(await _invoiceService.GetFromDatabaseAsync(id));
    }
 
    /// <summary>
@@ -73,7 +88,7 @@ public class InvoicesController : ControllerBase
             _logger.LogWarning("Bad Request : invoice is null.");
             return BadRequest(new APIResponse<bool>(false, "POST", "Invoice is null"));
          }
-         return Ok(new APIResponse<bool>(await _collection.AddToDatabaseAsync(newInvoice), "POST"));
+         return Ok(new APIResponse<bool>(await _invoiceService.AddToDatabaseAsync(newInvoice), "POST"));
       }
       catch (Exception e)
       {
@@ -105,7 +120,7 @@ public class InvoicesController : ControllerBase
          _logger.LogWarning("Invoice array is null.");
          return BadRequest(new APIResponse<IEnumerable<bool>?>("POST", "Invoice array is null."));
       }
-      var response = await _collection.AddToDatabaseAsync(newInvoices);
+      var response = await _invoiceService.AddToDatabaseAsync(newInvoices);
       if (response is null)
       {
          _logger.LogWarning("Database did not return any data. Should be IEnumerable<bool>.");
@@ -136,9 +151,9 @@ public class InvoicesController : ControllerBase
    {
       if (string.IsNullOrEmpty(id))
          return BadRequest(new APIResponse<bool>(false, "PUT", "ID not found"));
-      if (id.Length != 24)
-         return BadRequest(new APIResponse<bool>(false, "PUT", "ID not valid"));
-      return Ok(new APIResponse<bool>(await _collection.UpdateDatabaseAsync(id, updatedInvoice), "PUT"));
+      return id.Length != 24
+       ? BadRequest(new APIResponse<bool>(false, "PUT", "ID not valid"))
+       : Ok(new APIResponse<bool>(await _invoiceService.UpdateDatabaseAsync(id, updatedInvoice), "PUT"));
    }
 
    /// <summary>
@@ -157,9 +172,9 @@ public class InvoicesController : ControllerBase
    {
       if (string.IsNullOrEmpty(id))
          return BadRequest(new APIResponse<bool>(false, "DELETE", "ID not found"));
-      if (id.Length != 24)
-         return BadRequest(new APIResponse<bool>(false, "DELETE", "ID not valid"));
-      return Ok(new APIResponse<bool>(await _collection.DeleteFromDatabaseAsync(id), "DELETE"));
+      return id.Length != 24
+       ? BadRequest(new APIResponse<bool>(false, "DELETE", "ID not valid"))
+       : Ok(new APIResponse<bool>(await _invoiceService.DeleteFromDatabaseAsync(id), "DELETE"));
    }
 
    // DELETE api/Invoices/many
@@ -184,9 +199,100 @@ public class InvoicesController : ControllerBase
    {
       if (ids is null)
          return BadRequest(new APIResponse<int>(0, "DELETE", "IDs not found"));
-      if (ids.Length == 0)
-         return BadRequest(new APIResponse<int>(0, "DELETE", "IDs empty"));
-      return Ok(new APIResponse<int>(await _collection.DeleteFromDatabaseAsync(ids), "DELETE"));
+      return ids.Length == 0
+       ? BadRequest(new APIResponse<int>(0, "DELETE", "IDs empty"))
+       : Ok(new APIResponse<int>(await _invoiceService.DeleteFromDatabaseAsync(ids), "DELETE"));
+   }
+
+   /// <summary>
+   /// Parses a DigiKey invoice <see cref="IFormFile"/>, saves the created <see cref="IInvoiceModel"/> to the database and sends the completed <see cref="IInvoiceModel"/> back.
+   /// <list type="table">
+   ///   <item>
+   ///      <term>POST</term>
+   ///      <description>api/invoices/files/single</description>
+   ///   </item>
+   ///   <item>
+   ///      <term>BODY</term>
+   ///      <description><see cref="IFormFile"/> <paramref name="file"/></description>
+   ///   </item>
+   /// </list>
+   /// </summary>
+   /// <param name="file">The DigiKey invoice file.</param>
+   /// <returns>New <see cref="IInvoiceModel"/>.</returns>
+   [HttpPost("files/single")]
+   public async Task<ActionResult<APIResponse<IInvoiceModel?>>> PostParseFile(IFormFile file)
+   {
+      if (file == null)
+         return BadRequest(new APIResponse<IInvoiceModel?>(null, "POST", "Unable to map file to parameter."));
+      var invoice = await _invoiceService.ParseInvoiceFileAsync(file);
+      return invoice == null
+       ? BadRequest(new APIResponse<IInvoiceModel?>(null, "POST", "Returned invoice is null."))
+       : Ok(new APIResponse<IInvoiceModel?>(invoice, "POST", ""));
+   }
+
+   /// <summary>
+   /// Parses an <see cref="Array"/> of DigiKey invoice <see cref="IFormFile"/>s, adds them to the database, and sends the completed <see cref="IInvoiceModel"/>s back.
+   /// <list type="table">
+   ///   <item>
+   ///      <term>POST</term>
+   ///      <description>api/invoices/files/many</description>
+   ///   </item>
+   ///   <item>
+   ///      <term>BODY</term>
+   ///      <description><see cref="Array"/> of <see cref="IFormFile"/> <paramref name="files"/></description>
+   ///   </item>
+   /// </list>
+   /// </summary>
+   /// <param name="files"><see cref="Array"/> of DigiKey invoice files.</param>
+   /// <returns><see cref="Array"/> of new <see cref="IInvoiceModel"/>s.</returns>
+   [HttpPost("files/many")]
+   public async Task<ActionResult<APIResponse<IEnumerable<IInvoiceModel>?>>> PostParseManyFiles(IEnumerable<IFormFile> files)
+   {
+      if (files == null)
+         return BadRequest(new APIResponse<IEnumerable<IInvoiceModel>?>(null, "POST", $"Unable to map files to {nameof(files)} parameter."));
+      var invoices = await _invoiceService.ParseInvoiceFilesAsync(files);
+      return invoices == null
+       ? BadRequest(new APIResponse<IEnumerable<IInvoiceModel>?>(null, "POST", $"Unknown error. Returned invoices are null."))
+       : Ok(new APIResponse<IEnumerable<IInvoiceModel>?>(invoices, "POST"));
+   }
+
+   /// <summary>
+   /// Testing ONLY
+   /// <para/>
+   /// Runs the parser syncrnously for testing the functionality.
+   /// <list type="table">
+   ///   <item>
+   ///      <term>POST</term>
+   ///      <description>api/invoices/files/test</description>
+   ///   </item>
+   ///   <item>
+   ///      <term>BODY</term>
+   ///      <description><see cref="IFormFile"/> <paramref name="file"/></description>
+   ///   </item>
+   /// </list>
+   /// </summary>
+   /// <param name="file">File to parse.</param>
+   /// <returns></returns>
+   [HttpPost("files/test")]
+   public ActionResult<IInvoiceModel?> PostParseFileTest(IFormFile file)
+   {
+      if (file == null)
+         return BadRequest("File did not map properly.");
+      if (file.ContentType != "text/csv")
+         return BadRequest("Invalid file type. File nust be a CSV file.");
+      if (int.TryParse(Path.GetFileNameWithoutExtension(file.FileName), out int orderNum))
+      {
+         //var result = CSVParserStatic.ParseFile<DigiKeyPartModel>(file.OpenReadStream());
+         var parser = _parserFactory.Create();
+         var invoiceParts = parser.ParseFile<DigiKeyPartModel>(file.OpenReadStream());
+         InvoiceModel newInvoice = new()
+         {
+            Parts = invoiceParts.Values.ToList(),
+            OrderNumber = orderNum,
+         };
+         return Ok(newInvoice);
+      }
+      return BadRequest("File name is not valid. Name must be the DigiKey sales order number.");
    }
    #endregion
 }

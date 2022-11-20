@@ -10,4 +10,8 @@
     <PackageReference Include="MongoDB.Driver" Version="2.18.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Libraries\CSVParserLibrary\CSVParserLibrary\CSVParserLibrary.csproj" />
+  </ItemGroup>
+
 </Project>
