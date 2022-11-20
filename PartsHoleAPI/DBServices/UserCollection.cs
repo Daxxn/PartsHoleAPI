@@ -16,6 +16,7 @@ public class UserCollection : IUserCollection
    public IMongoCollection<IUserModel> Collection { get; init; }
    private IMongoCollection<IPartModel> PartsCollection { get; init; }
    private IMongoCollection<IInvoiceModel> InvoicesCollection { get; init; }
+   private IMongoCollection<IBinModel> BinCollection { get; set; }
    #endregion
 
    #region Constructors
@@ -26,6 +27,7 @@ public class UserCollection : IUserCollection
       Collection = db.GetCollection<IUserModel>(settings.Value.UsersCollection);
       PartsCollection = db.GetCollection<IPartModel>(settings.Value.PartsCollection);
       InvoicesCollection = db.GetCollection<IInvoiceModel>(settings.Value.InvoicesCollection);
+      BinCollection = db.GetCollection<IBinModel>(settings.Value.BinsCollection);
    }
    #endregion
 
@@ -48,11 +50,6 @@ public class UserCollection : IUserCollection
          var partsResult = await PartsCollection.FindAsync((x) => user.Parts.Contains(x._id));
          if (partsResult != null)
          {
-            //while (partsResult.)
-            //{
-
-            //}
-            //var part = partsResult.FirstOrDefault();
             data.Parts = await partsResult.ToListAsync();
          }
       }
@@ -62,6 +59,14 @@ public class UserCollection : IUserCollection
          if (invoiceResult != null)
          {
             data.Invoices = await invoiceResult.ToListAsync();
+         }
+      }
+      if (user.Bins.Count > 0)
+      {
+         var binResult = await BinCollection.FindAsync((x) => user.Bins.Contains(x._id));
+         if (binResult != null)
+         {
+            data.Bins = await binResult.ToListAsync();
          }
       }
       return data;

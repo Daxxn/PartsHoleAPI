@@ -19,18 +19,21 @@ namespace PartsHoleAPI.Controllers;
 public class UserController : ControllerBase
 {
    private readonly IUserCollection _userService;
-   private readonly ICollectionService<IPartModel> _partsCollection;
+   private readonly ICollectionService<IPartModel> _partsService;
+   private readonly ICollectionService<IBinModel> _binService;
    private readonly IInvoiceService _invoiceService;
    private readonly ILogger<UserController> _logger;
 
    public UserController(
       ILogger<UserController> logger,
-      IUserCollection userCollection,
-      ICollectionService<IPartModel> partsCollection,
+      IUserCollection userService,
+      ICollectionService<IPartModel> partsService,
+      ICollectionService<IBinModel> binService,
       IInvoiceService invoiceService)
    {
-      _userService = userCollection;
-      _partsCollection = partsCollection;
+      _userService = userService;
+      _partsService = partsService;
+      _binService = binService;
       _invoiceService = invoiceService;
       _logger = logger;
    }
@@ -158,7 +161,7 @@ public class UserController : ControllerBase
       var user = await _userService.GetFromDatabaseAsync(data.UserId);
       if (user is null)
          return NotFound("User not found.");
-      var part = await _partsCollection.GetFromDatabaseAsync(data.ModelId);
+      var part = await _partsService.GetFromDatabaseAsync(data.ModelId);
       if (part is null)
          return NotFound("Part not found.");
       user.Parts.Add(data.ModelId);
@@ -196,6 +199,40 @@ public class UserController : ControllerBase
       if (invoice is null)
          return NotFound("Invoice not found.");
       user.Invoices.Add(data.ModelId);
+      return new APIResponse<bool>(await _userService.UpdateDatabaseAsync(data.UserId, user), "POST");
+   }
+
+   /// <summary>
+   /// Adds a newly created <see cref="IBinModel"/> to the <see cref="IUserModel"/>.
+   /// <list type="table">
+   ///   <item>
+   ///      <term>POST</term>
+   ///      <description>api/user/add-bin</description>
+   ///   </item>
+   ///   <item>
+   ///      <term>BODY</term>
+   ///      <description><see cref="AppendRequestModel"/> <paramref name="data"/></description>
+   ///   </item>
+   /// </list>
+   /// </summary>
+   /// <param name="data"><see cref="IUserModel"/> ID and <see cref="IBinModel"/> ID.</param>
+   /// <returns>True if successful, otherwise False.</returns>
+   [HttpPost("add-bin")]
+   public async Task<ActionResult<APIResponse<bool>>> PostAppendBin([FromBody] AppendRequestModel data)
+   {
+      if (data.UserId is null)
+         return BadRequest(new APIResponse<bool>(false, "POST", "Unable to find user ID."));
+      if (string.IsNullOrEmpty(data.ModelId))
+         return BadRequest(new APIResponse<bool>(false, "POST", "Part ID not found."));
+      if (data.ModelId.Length != 24)
+         return BadRequest(new APIResponse<bool>(false, "POST", "Part ID is not valid."));
+      var user = await _userService.GetFromDatabaseAsync(data.UserId);
+      if (user is null)
+         return NotFound("User not found.");
+      var bin = await _binService.GetFromDatabaseAsync(data.ModelId);
+      if (bin is null)
+         return NotFound("Invoice not found.");
+      user.Bins.Add(data.ModelId);
       return new APIResponse<bool>(await _userService.UpdateDatabaseAsync(data.UserId, user), "POST");
    }
 

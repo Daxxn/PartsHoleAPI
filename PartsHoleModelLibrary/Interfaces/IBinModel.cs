@@ -1,13 +1,15 @@
 ﻿using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Bson;
 
-namespace PartsHoleLib.Interfaces
+namespace PartsHoleLib.Interfaces;
+
+public interface IBinModel : IModel
 {
-   public interface IBinModel : IModel
-   {
-      int Horizontal { get; set; }
-      bool IsBook { get; set; }
-      string Name { get; set; }
-      int Vertical { get; set; }
-   }
+   [BsonId]
+   [BsonRepresentation(BsonType.ObjectId)]
+   new string _id { get; set; }
+   int Horizontal { get; set; }
+   bool IsBook { get; set; }
+   string Name { get; set; }
+   int Vertical { get; set; }
 }
