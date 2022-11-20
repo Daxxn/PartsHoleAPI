@@ -35,11 +35,6 @@ public class InvoicesController : ControllerBase
       _invoiceService = invoiceService;
       _logger = logger;
       _parserFactory = parserFactory;
-      CSVParserStatic.UpdateOptions(new()
-      {
-         IgnoreCase = true,
-         IgnoreLineParseErrors = true,
-      });
    }
    #endregion
 
@@ -235,7 +230,7 @@ public class InvoicesController : ControllerBase
    /// <list type="table">
    ///   <item>
    ///      <term>POST</term>
-   ///      <description>api/invoices/files/many</description>
+   ///      <description>api/invoices/files/many/{}</description>
    ///   </item>
    ///   <item>
    ///      <term>BODY</term>
@@ -252,12 +247,12 @@ public class InvoicesController : ControllerBase
          return BadRequest(new APIResponse<IEnumerable<IInvoiceModel>?>(null, "POST", $"Unable to map files to {nameof(files)} parameter."));
       var invoices = await _invoiceService.ParseInvoiceFilesAsync(files);
       return invoices == null
-       ? BadRequest(new APIResponse<IEnumerable<IInvoiceModel>?>(null, "POST", $"Unknown error. Returned invoices are null."))
+       ? BadRequest(new APIResponse<IEnumerable<IInvoiceModel>?>(null, "POST", $"Internal error. Probable file parse issue. Returned invoices are null."))
        : Ok(new APIResponse<IEnumerable<IInvoiceModel>?>(invoices, "POST"));
    }
 
    /// <summary>
-   /// Testing ONLY
+   /// !!Testing ONLY!!
    /// <para/>
    /// Runs the parser syncrnously for testing the functionality.
    /// <list type="table">
@@ -274,7 +269,7 @@ public class InvoicesController : ControllerBase
    /// <param name="file">File to parse.</param>
    /// <returns></returns>
    [HttpPost("files/test")]
-   public ActionResult<IInvoiceModel?> PostParseFileTest(IFormFile file)
+   public async Task<ActionResult<IInvoiceModel?>> PostParseFileTest(IFormFile file)
    {
       if (file == null)
          return BadRequest("File did not map properly.");
@@ -282,14 +277,7 @@ public class InvoicesController : ControllerBase
          return BadRequest("Invalid file type. File nust be a CSV file.");
       if (int.TryParse(Path.GetFileNameWithoutExtension(file.FileName), out int orderNum))
       {
-         //var result = CSVParserStatic.ParseFile<DigiKeyPartModel>(file.OpenReadStream());
-         var parser = _parserFactory.Create();
-         var invoiceParts = parser.ParseFile<DigiKeyPartModel>(file.OpenReadStream());
-         InvoiceModel newInvoice = new()
-         {
-            Parts = invoiceParts.Values.ToList(),
-            OrderNumber = orderNum,
-         };
+         var newInvoice = await _invoiceService.ParseInvoiceFileAsync(file);
          return Ok(newInvoice);
       }
       return BadRequest("File name is not valid. Name must be the DigiKey sales order number.");

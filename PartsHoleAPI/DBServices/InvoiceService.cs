@@ -1,4 +1,6 @@
-﻿using CSVParserLibrary;
+﻿using System.Collections.Concurrent;
+
+using CSVParserLibrary;
 
 using Microsoft.Extensions.Options;
 
@@ -16,7 +18,6 @@ public class InvoiceService : IInvoiceService
 {
    #region Local Props
    public IMongoCollection<IInvoiceModel> Collection { get; init; }
-   private readonly IOptions<DatabaseSettings> _settings;
    private readonly IAbstractFactory<ICSVParser> _parserFactory;
    private readonly ICSVParserOptions _parserOptions;
    #endregion
@@ -24,12 +25,14 @@ public class InvoiceService : IInvoiceService
    #region Constructors
    public InvoiceService(
       IOptions<DatabaseSettings> settings,
-      IAbstractFactory<ICSVParser> parserFactory,
-      ICSVParserOptions parserOptions)
+      IAbstractFactory<ICSVParser> parserFactory)
    {
-      _settings = settings;
       _parserFactory = parserFactory;
-      _parserOptions = parserOptions;
+      _parserOptions = new CSVParserOptions()
+      {
+         IgnoreCase = true,
+         IgnoreLineParseErrors = true,
+      };
       var str = settings.Value.GetCollection<IInvoiceModel>();
       var client = new MongoClient(settings.Value.ConnectionString);
       Collection = client.GetDatabase(settings.Value.DatabaseName).GetCollection<IInvoiceModel>(str);
@@ -135,11 +138,10 @@ public class InvoiceService : IInvoiceService
 
    public async Task<IInvoiceModel> ParseInvoiceFileAsync(IFormFile file)
    {
-      if (int.TryParse(file.Name, out var id))
+      if (int.TryParse(Path.GetFileNameWithoutExtension(file.FileName), out var id))
       {
          var parser = _parserFactory.Create();
-         parser.UpdateOptions(_parserOptions);
-         var result = await parser.ParseFileAsync<DigiKeyPartModel>(file.OpenReadStream());
+         var result = await parser.ParseFileAsync<DigiKeyPartModel>(file.OpenReadStream(), _parserOptions);
          var newInvoice = new InvoiceModel()
          {
             Parts = result.Values.ToList(),
@@ -165,29 +167,36 @@ public class InvoiceService : IInvoiceService
       throw new Exception("File name must be the same as the sales order number from DigiKey.");
    }
 
-   public Task<IEnumerable<IInvoiceModel>> ParseInvoiceFilesAsync(IEnumerable<IFormFile> files) =>
-      throw new NotImplementedException();
-
-   public async Task<bool> UpdateParserOptionsAsync(ICSVParserOptions options)
+   public async Task<IEnumerable<IInvoiceModel>> ParseInvoiceFilesAsync(IEnumerable<IFormFile> files)
    {
-      return await Task.Run(() =>
+      var bag = new ConcurrentBag<IInvoiceModel>();
+      var errors = new List<Exception>();
+      await Parallel.ForEachAsync(files, async (file, token) =>
       {
-         _parserOptions.Delimiters = options.Delimiters;
-         _parserOptions.ExclusionFunctions = options.ExclusionFunctions;
-         _parserOptions.IgnoreCase = options.IgnoreCase;
-         _parserOptions.IgnoreLineParseErrors = options.IgnoreLineParseErrors;
-         return true;
+         try
+         {
+            if (int.TryParse(Path.GetFileNameWithoutExtension(file.Name), out int orderNum))
+            {
+               var parser = _parserFactory.Create();
+               var results = await parser.ParseFileAsync<DigiKeyPartModel>(file.OpenReadStream(), _parserOptions);
+               var newInvoice = new InvoiceModel()
+               {
+                  OrderNumber = orderNum,
+                  Parts = new(results.Values)
+               };
+               if (results.Errors != null)
+               {
+                  errors.AddRange(results.Errors);
+               }
+               bag.Add(newInvoice);
+            }
+         }
+         catch (Exception e)
+         {
+            errors.Add(e);
+         }
       });
-   }
-
-   public bool ResetParserOptionsAsync()
-   {
-      var def = new CSVParserOptions();
-      _parserOptions.Delimiters = def.Delimiters;
-      _parserOptions.ExclusionFunctions = def.ExclusionFunctions;
-      _parserOptions.IgnoreCase = def.IgnoreCase;
-      _parserOptions.IgnoreLineParseErrors = def.IgnoreLineParseErrors;
-      return true;
+      return errors.Count == 0 ? bag : throw new AggregateException(errors);
    }
    #endregion
 

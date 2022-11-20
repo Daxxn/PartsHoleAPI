@@ -18,20 +18,20 @@ namespace PartsHoleAPI.Controllers;
 [ApiController]
 public class UserController : ControllerBase
 {
-   private readonly IUserCollection _collection;
+   private readonly IUserCollection _userService;
    private readonly ICollectionService<IPartModel> _partsCollection;
-   private readonly ICollectionService<IInvoiceModel> _invoiceCollection;
+   private readonly IInvoiceService _invoiceService;
    private readonly ILogger<UserController> _logger;
 
    public UserController(
       ILogger<UserController> logger,
       IUserCollection userCollection,
       ICollectionService<IPartModel> partsCollection,
-      ICollectionService<IInvoiceModel> invoiceCollection)
+      IInvoiceService invoiceService)
    {
-      _collection = userCollection;
+      _userService = userCollection;
       _partsCollection = partsCollection;
-      _invoiceCollection = invoiceCollection;
+      _invoiceService = invoiceService;
       _logger = logger;
    }
 
@@ -59,7 +59,7 @@ public class UserController : ControllerBase
          StatusCode(StatusCodes.Status400BadRequest);
          return BadRequest(id);
       }
-      var user = await _collection.GetFromDatabaseAsync(id);
+      var user = await _userService.GetFromDatabaseAsync(id);
       if (user is null)
          return NotFound(id);
       return Ok(user);
@@ -93,7 +93,7 @@ public class UserController : ControllerBase
          _logger.LogWarning("No parts or invoice data found.");
          return BadRequest(new APIResponse<IUserData?>("POST", "User has no data."));
       }
-      var response = await _collection.GetUserDataFromDatabaseAsync(user);
+      var response = await _userService.GetUserDataFromDatabaseAsync(user);
       return response is null
          ? NotFound(new APIResponse<IUserData?>("POST", "No user data found Found"))
          : Ok(new APIResponse<IUserData?>(response, "POST"));
@@ -128,7 +128,7 @@ public class UserController : ControllerBase
          _logger.LogWarning("User model has no valid ID.");
          return BadRequest(new APIResponse<bool>(false, "POST", "User model has no valid ID."));
       }
-      return Ok(new APIResponse<bool>(await _collection.AddToDatabaseAsync(newUser), "POST"));
+      return Ok(new APIResponse<bool>(await _userService.AddToDatabaseAsync(newUser), "POST"));
    }
 
    /// <summary>
@@ -155,14 +155,14 @@ public class UserController : ControllerBase
          return BadRequest(new APIResponse<bool>(false, "POST", "Part ID not found."));
       if (data.ModelId.Length != 24)
          return BadRequest(new APIResponse<bool>(false, "POST", "Part ID is not valid."));
-      var user = await _collection.GetFromDatabaseAsync(data.UserId);
+      var user = await _userService.GetFromDatabaseAsync(data.UserId);
       if (user is null)
          return NotFound("User not found.");
       var part = await _partsCollection.GetFromDatabaseAsync(data.ModelId);
       if (part is null)
          return NotFound("Part not found.");
       user.Parts.Add(data.ModelId);
-      return new APIResponse<bool>(await _collection.UpdateDatabaseAsync(data.UserId, user), "POST");
+      return new APIResponse<bool>(await _userService.UpdateDatabaseAsync(data.UserId, user), "POST");
    }
 
    /// <summary>
@@ -189,14 +189,14 @@ public class UserController : ControllerBase
          return BadRequest(new APIResponse<bool>(false, "POST", "Part ID not found."));
       if (data.ModelId.Length != 24)
          return BadRequest(new APIResponse<bool>(false, "POST", "Part ID is not valid."));
-      var user = await _collection.GetFromDatabaseAsync(data.ModelId);
+      var user = await _userService.GetFromDatabaseAsync(data.UserId);
       if (user is null)
          return NotFound("User not found.");
-      var invoice = await _invoiceCollection.GetFromDatabaseAsync(data.ModelId);
+      var invoice = await _invoiceService.GetFromDatabaseAsync(data.ModelId);
       if (invoice is null)
          return NotFound("Invoice not found.");
       user.Invoices.Add(data.ModelId);
-      return new APIResponse<bool>(await _collection.UpdateDatabaseAsync(data.UserId, user), "POST");
+      return new APIResponse<bool>(await _userService.UpdateDatabaseAsync(data.UserId, user), "POST");
    }
 
    /// <summary>
@@ -218,7 +218,7 @@ public class UserController : ControllerBase
    public async Task<ActionResult<APIResponse<bool>>> Put([FromBody] UserModel updatedUser) =>
       updatedUser is null
          ? BadRequest(new APIResponse<bool>(false, "PUT", "Unable to find user."))
-         : Ok(new APIResponse<bool>(await _collection.UpdateDatabaseAsync(updatedUser._id, updatedUser), "PUT"));
+         : Ok(new APIResponse<bool>(await _userService.UpdateDatabaseAsync(updatedUser._id, updatedUser), "PUT"));
 
    /// <summary>
    /// Deletes an <see cref="IUserModel"/> based on the <see cref="ObjectId"/>.
@@ -235,7 +235,7 @@ public class UserController : ControllerBase
    public async Task<ActionResult<APIResponse<bool>>> Delete(string id) =>
       string.IsNullOrEmpty(id)
          ? BadRequest(new APIResponse<bool>(false, "DELETE", "Unable to find user ID."))
-         : await _collection.DeleteFromDatabaseAsync(id)
+         : await _userService.DeleteFromDatabaseAsync(id)
             ? Ok(new APIResponse<bool>(true, "DELETE", $"User {id} Deleted"))
             : BadRequest(new APIResponse<bool>(false, "DELETE", "Unable to delete user."));
    #endregion
