@@ -11,9 +11,6 @@ namespace PartsHoleLib.Interfaces
       int OrderNumber { get; set; }
       [BsonRepresentation(BsonType.ObjectId)]
       List<DigiKeyPartModel> Parts { get; set; }
-      string? Path { get; set; }
-      decimal SubTotal { get; set; }
-      int? SupplierType { get; set; }
-      bool IsAddedToParts { get; set; }
+      decimal SubTotal { get; }
    }
 }

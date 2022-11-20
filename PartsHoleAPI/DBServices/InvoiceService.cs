@@ -144,7 +144,6 @@ public class InvoiceService : IInvoiceService
          {
             Parts = result.Values.ToList(),
             OrderNumber = id,
-            IsAddedToParts = false,
          };
          var foundInvoices = (await Collection.FindAsync((inv) => inv.OrderNumber == id)).FirstOrDefault();
          if (foundInvoices != null)
