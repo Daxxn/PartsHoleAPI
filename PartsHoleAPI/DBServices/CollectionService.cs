@@ -33,7 +33,7 @@ public class CollectionService<T> : ICollectionService<T> where T : class, IMode
       if (parts is null)
          return null;
       if (parts.Count > 1)
-         throw new Exception("Multiple parts found with that ID. Something is horribly wrong!!");
+         throw new Exception("Multiple models found with that ID. Something is horribly wrong!!");
       return parts[0];
    }
 
@@ -117,7 +117,7 @@ public class CollectionService<T> : ICollectionService<T> where T : class, IMode
    public async Task<bool> DeleteFromDatabaseAsync(string id)
    {
       var result = await Collection.DeleteOneAsync((p) => p._id == id);
-      return result is null ? false : result.DeletedCount > 0;
+      return result is not null && result.DeletedCount > 0;
    }
 
    public async Task<int> DeleteFromDatabaseAsync(string[] ids)

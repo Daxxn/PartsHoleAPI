@@ -2,8 +2,6 @@
 
 using PartsHoleLib.Interfaces;
 
-using PartsHoleModelLibrary;
-
 namespace PartsHoleAPI.DBServices
 {
    public interface IUserCollection

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 using PartsHoleLib.Interfaces;
 
-namespace PartsHoleModelLibrary
+namespace PartsHoleLib
 {
    public class UserData : IUserData
    {

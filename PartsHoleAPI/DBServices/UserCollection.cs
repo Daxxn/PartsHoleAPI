@@ -8,8 +8,6 @@ using PartsHoleAPI.Utils;
 using PartsHoleLib;
 using PartsHoleLib.Interfaces;
 
-using PartsHoleModelLibrary;
-
 namespace PartsHoleAPI.DBServices;
 
 public class UserCollection : IUserCollection
