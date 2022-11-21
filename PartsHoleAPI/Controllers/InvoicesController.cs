@@ -3,6 +3,7 @@
 using CSVParserLibrary;
 
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
 
 using MongoDB.Bson;
 
@@ -130,7 +131,7 @@ public class InvoicesController : ControllerBase
    /// <list type="table">
    ///   <item>
    ///      <term>PUT</term>
-   ///      <description>api/invoices/{<paramref name="id"/>}</description>
+   ///      <description>api/invoices</description>
    ///   </item>
    ///   <item>
    ///      <term>BODY</term>
@@ -138,17 +139,18 @@ public class InvoicesController : ControllerBase
    ///   </item>
    /// </list>
    /// </summary>
-   /// <param name="id"><see cref="ObjectId"/> of the <see cref="IInvoiceModel"/> to update.</param>
    /// <param name="updatedInvoice">Updated <see cref="IInvoiceModel"/> data.</param>
    /// <returns><see langword="true"/> if successful, otherwise <see langword="false"/></returns>
-   [HttpPut("{id:length(24)}")]
-   public async Task<ActionResult<APIResponse<bool>>> Put(string id, [FromBody] InvoiceModel updatedInvoice)
+   [HttpPut]
+   public async Task<ActionResult<APIResponse<bool>>> Put([FromBody] InvoiceModel updatedInvoice)
    {
-      if (string.IsNullOrEmpty(id))
+      if (updatedInvoice is null)
+         return BadRequest(new APIResponse<bool>(false, "PUT", "Method body not found"));
+      if (string.IsNullOrEmpty(updatedInvoice._id))
          return BadRequest(new APIResponse<bool>(false, "PUT", "ID not found"));
-      return id.Length != 24
+      return updatedInvoice._id.Length != 24
        ? BadRequest(new APIResponse<bool>(false, "PUT", "ID not valid"))
-       : Ok(new APIResponse<bool>(await _invoiceService.UpdateDatabaseAsync(id, updatedInvoice), "PUT"));
+       : Ok(new APIResponse<bool>(await _invoiceService.UpdateDatabaseAsync(updatedInvoice._id, updatedInvoice), "PUT"));
    }
 
    /// <summary>

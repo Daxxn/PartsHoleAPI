@@ -21,4 +21,6 @@ public interface IPartModel : IModel
    decimal ExtendedPrice { get; }
    decimal UnitPrice { get; set; }
    string? Datasheet { get; set; }
+   [BsonRepresentation(BsonType.ObjectId)]
+   string? BinLocationId { get; set; }
 }

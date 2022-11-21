@@ -123,7 +123,7 @@ public class PartsController : ControllerBase
    /// <list type="table">
    ///   <item>
    ///      <term>PUT</term>
-   ///      <description>api/parts/{<paramref name="id"/>}</description>
+   ///      <description>api/parts</description>
    ///   </item>
    ///   <item>
    ///      <term>BODY</term>
@@ -131,15 +131,14 @@ public class PartsController : ControllerBase
    ///   </item>
    /// </list>
    /// </summary>
-   /// <param name="id"><see cref="ObjectId"/> of the <see cref="IPartModel"/> to update.</param>
    /// <param name="updatedPart">Updated <see cref="IPartModel"/> data.</param>
    /// <returns><see langword="true"/> if successful, otherwise <see langword="false"/></returns>
-   [HttpPut("{id:length(24)}")]
-   public async Task<ActionResult<APIResponse<bool>>> Put(string id, [FromBody] PartModel updatedPart)
+   [HttpPut]
+   public async Task<ActionResult<APIResponse<bool>>> Put([FromBody] PartModel updatedPart)
    {
-      if (string.IsNullOrEmpty(id)) return BadRequest(new APIResponse<bool>(false, "PUT", "ID not found."));
-      if (id.Length != 24) return BadRequest(new APIResponse<bool>(false, "PUT", "ID not valid."));
-      return Ok(new APIResponse<bool>(await _collection.UpdateDatabaseAsync(id, updatedPart), "PUT"));
+      if (string.IsNullOrEmpty(updatedPart._id)) return BadRequest(new APIResponse<bool>(false, "PUT", "ID not found."));
+      if (updatedPart._id.Length != 24) return BadRequest(new APIResponse<bool>(false, "PUT", "ID not valid."));
+      return Ok(new APIResponse<bool>(await _collection.UpdateDatabaseAsync(updatedPart._id, updatedPart), "PUT"));
    }
 
    /// <summary>

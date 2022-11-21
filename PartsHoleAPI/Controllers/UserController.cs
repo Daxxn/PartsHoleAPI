@@ -1,15 +1,14 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
 using MongoDB.Bson;
-using MongoDB.Bson.Serialization.Attributes;
-using MongoDB.Bson.Serialization.Serializers;
 
 using PartsHoleAPI.DBServices;
 
 using PartsHoleLib;
-using PartsHoleLib.Enums;
 using PartsHoleLib.Interfaces;
 
+using PartsHoleRestLibrary.Enums;
+using PartsHoleRestLibrary.Exceptions;
 using PartsHoleRestLibrary.Requests;
 using PartsHoleRestLibrary.Responses;
 
@@ -103,7 +102,6 @@ public class UserController : ControllerBase
          : Ok(new APIResponse<IUserData?>(response, "POST"));
    }
 
-   // POST api/User
    /// <summary>
    /// Creates a new <see cref="IUserModel"/> and saves it to the database.
    /// <list type="table">
@@ -136,105 +134,47 @@ public class UserController : ControllerBase
    }
 
    /// <summary>
-   /// Adds a newly created <see cref="IPartModel"/> to the <see cref="IUserModel"/>.
+   /// Adds the passed model <see cref="ObjectId"/> to the users id collection.
    /// <list type="table">
    ///   <item>
    ///      <term>POST</term>
-   ///      <description>api/user/add-part</description>
+   ///      <description>api/user/add-model</description>
    ///   </item>
    ///   <item>
    ///      <term>BODY</term>
-   ///      <description><see cref="RequestUpdateModel"/> <paramref name="data"/></description>
+   ///      <description><see cref="RequestUpdateListModel"/> <paramref name="requestData"/></description>
    ///   </item>
    /// </list>
    /// </summary>
-   /// <param name="data"><see cref="IUserModel"/> ID and <see cref="IPartModel"/> ID.</param>
+   /// <param name="requestData"><see cref="IUserModel"/> ID, <see cref="IBinModel"/> ID, and <see cref="ModelIDSelector"/>.</param>
    /// <returns>True if successful, otherwise False.</returns>
-   [HttpPost("add-part")]
-   public async Task<ActionResult<APIResponse<bool>>> PostAppendPart([FromBody] RequestUpdateModel data)
+   [HttpPost("add-model")]
+   public async Task<ActionResult<APIResponse<bool>>> PostAppendModel([FromBody] RequestUpdateListModel requestData)
    {
-      if (data.UserId is null)
-         return BadRequest(new APIResponse<bool>(false, "POST", "Unable to find user ID."));
-      if (string.IsNullOrEmpty(data.ModelId))
-         return BadRequest(new APIResponse<bool>(false, "POST", "Part ID not found."));
-      if (data.ModelId.Length != 24)
-         return BadRequest(new APIResponse<bool>(false, "POST", "Part ID is not valid."));
-      var user = await _userService.GetFromDatabaseAsync(data.UserId);
-      if (user is null)
-         return NotFound("User not found.");
-      var part = await _partsService.GetFromDatabaseAsync(data.ModelId);
-      if (part is null)
-         return NotFound("Part not found.");
-      user.Parts.Add(data.ModelId);
-      return new APIResponse<bool>(await _userService.UpdateDatabaseAsync(data.UserId, user), "POST");
-   }
-
-   /// <summary>
-   /// Adds a newly created <see cref="IInvoiceModel"/> to the <see cref="IUserModel"/>.
-   /// <list type="table">
-   ///   <item>
-   ///      <term>POST</term>
-   ///      <description>api/user/add-invoice</description>
-   ///   </item>
-   ///   <item>
-   ///      <term>BODY</term>
-   ///      <description><see cref="RequestUpdateModel"/> <paramref name="data"/></description>
-   ///   </item>
-   /// </list>
-   /// </summary>
-   /// <param name="data"><see cref="IUserModel"/> ID and <see cref="IInvoiceModel"/> ID.</param>
-   /// <returns>True if successful, otherwise False.</returns>
-   [HttpPost("add-invoice")]
-   public async Task<ActionResult<APIResponse<bool>>> PostAppendInvoice([FromBody] RequestUpdateModel data)
-   {
-      if (data.UserId is null)
-         return BadRequest(new APIResponse<bool>(false, "POST", "Unable to find user ID."));
-      if (string.IsNullOrEmpty(data.ModelId))
-         return BadRequest(new APIResponse<bool>(false, "POST", "Part ID not found."));
-      if (data.ModelId.Length != 24)
-         return BadRequest(new APIResponse<bool>(false, "POST", "Part ID is not valid."));
-      var user = await _userService.GetFromDatabaseAsync(data.UserId);
-      if (user is null)
-         return NotFound("User not found.");
-      var invoice = await _invoiceService.GetFromDatabaseAsync(data.ModelId);
-      if (invoice is null)
-         return NotFound("Invoice not found.");
-      user.Invoices.Add(data.ModelId);
-      return new APIResponse<bool>(await _userService.UpdateDatabaseAsync(data.UserId, user), "POST");
-   }
-
-   /// <summary>
-   /// Adds a newly created <see cref="IBinModel"/> to the <see cref="IUserModel"/>.
-   /// <list type="table">
-   ///   <item>
-   ///      <term>POST</term>
-   ///      <description>api/user/add-bin</description>
-   ///   </item>
-   ///   <item>
-   ///      <term>BODY</term>
-   ///      <description><see cref="RequestUpdateModel"/> <paramref name="data"/></description>
-   ///   </item>
-   /// </list>
-   /// </summary>
-   /// <param name="data"><see cref="IUserModel"/> ID and <see cref="IBinModel"/> ID.</param>
-   /// <returns>True if successful, otherwise False.</returns>
-   [HttpPost("add-bin")]
-   public async Task<ActionResult<APIResponse<bool>>> PostAppendBin([FromBody] RequestUpdateModel data)
-   {
-      if (data.UserId is null)
-         return BadRequest(new APIResponse<bool>(false, "POST", "Unable to find user ID."));
-      if (string.IsNullOrEmpty(data.ModelId))
-         return BadRequest(new APIResponse<bool>(false, "POST", "Part ID not found."));
-      if (data.ModelId.Length != 24)
-         return BadRequest(new APIResponse<bool>(false, "POST", "Part ID is not valid."));
-      var user = await _userService.GetFromDatabaseAsync(data.UserId);
-      if (user is null)
-         return NotFound("User not found.");
-      var bin = await _binService.GetFromDatabaseAsync(data.ModelId);
-      if (bin is null)
-         return NotFound("Invoice not found.");
-      user.Bins.Add(data.ModelId);
-      return new APIResponse<bool>(await _userService.UpdateDatabaseAsync(data.UserId, user), "POST");
+      try
+      {
+         if (string.IsNullOrEmpty(requestData.UserId))
+            return BadRequest(new APIResponse<bool>(false, "POST", "User ID was not provided."));
+         if (string.IsNullOrEmpty(requestData.ModelId))
+            return BadRequest(new APIResponse<bool>(false, "POST", "Model ID was not provided."));
+         var modelId = (ModelIDSelector?)requestData.PropId ?? ModelIDSelector.NONE;
+         if (modelId == ModelIDSelector.NONE)
+            return BadRequest(new APIResponse<bool>(false, "POST", "Property type does not match."));
+         var result = await _userService.AppendModelToUserAsync(requestData.UserId, requestData.ModelId, modelId);
+         if (result)
+         {
+            return Ok(new APIResponse<bool>(true, "POST"));
+         }
+         return BadRequest(new APIResponse<bool>(false, "POST", "Failed to remove model."));
+      }
+      catch (ModelNotFoundException e)
+      {
+         return NotFound(new APIResponse<bool>(false, "POST", $"Unable to find {e.ModelName}"));
+      }
+      catch (Exception)
+      {
+         throw;
+      }
    }
 
    /// <summary>

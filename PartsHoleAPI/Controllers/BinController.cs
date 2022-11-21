@@ -98,7 +98,7 @@ public class BinController : ControllerBase
    /// <list type="table">
    ///   <item>
    ///      <term>PUT</term>
-   ///      <description>api/bin/{<paramref name="id"/>}</description>
+   ///      <description>api/bin</description>
    ///   </item>
    ///   <item>
    ///      <term>BODY</term>
@@ -106,17 +106,16 @@ public class BinController : ControllerBase
    ///   </item>
    /// </list>
    /// </summary>
-   /// <param name="id"><see cref="ObjectId"/> of the model to update.</param>
    /// <param name="updatedBin">the updated <see cref="IBinModel"/>.</param>
    /// <returns>True if successful, otherwise false.</returns>
-   [HttpPut("{id:length(24)}")]
-   public async Task<ActionResult<APIResponse<bool>>> Put(string id, [FromBody] BinModel updatedBin)
+   [HttpPut]
+   public async Task<ActionResult<APIResponse<bool>>> Put([FromBody] BinModel updatedBin)
    {
       if (updatedBin is null)
-         return BadRequest(new APIResponse<bool>(false, "PUT", "Bin not found."));
-      if (id.Length != 24)
+         return BadRequest(new APIResponse<bool>(false, "PUT", "Method body not found."));
+      if (updatedBin._id.Length != 24)
          return BadRequest(new APIResponse<bool>(false, "PUT", "ID not found."));
-      return Ok(new APIResponse<bool>(await _collection.UpdateDatabaseAsync(id, updatedBin), "PUT"));
+      return Ok(new APIResponse<bool>(await _collection.UpdateDatabaseAsync(updatedBin._id, updatedBin), "PUT"));
    }
 
    /// <summary>

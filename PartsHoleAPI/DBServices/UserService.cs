@@ -6,8 +6,10 @@ using MongoDB.Driver;
 using PartsHoleAPI.Utils;
 
 using PartsHoleLib;
-using PartsHoleLib.Enums;
 using PartsHoleLib.Interfaces;
+
+using PartsHoleRestLibrary.Enums;
+using PartsHoleRestLibrary.Exceptions;
 
 namespace PartsHoleAPI.DBServices;
 
@@ -78,7 +80,7 @@ public class UserService : IUserService
    {
       var result = await UserCollection.FindAsync(x => x._id == data._id);
       if (result is null)
-         return false;
+         throw new ModelNotFoundException("UserModel", "User not found.");
 
       var foundUsers = await result.ToListAsync();
       if (foundUsers.Count == 0)
@@ -113,7 +115,6 @@ public class UserService : IUserService
             case ModelIDSelector.PARTS:
                if (foundUser.Parts.Remove(modelId))
                {
-                  //var result = await UserCollection.ReplaceOneAsync(user => user._id == userId, foundUser);
                   var update = Builders<IUserModel>.Update.Set((user) => user.Parts, foundUser.Parts);
                   var result = await UserCollection.UpdateOneAsync(user => user._id == userId, update);
                   if (result.IsAcknowledged)
@@ -122,10 +123,10 @@ public class UserService : IUserService
                   }
                }
                return false;
-            case ModelIDSelector.INVOICE:
-               if (foundUser.Invoices.Remove(modelId))
+            case ModelIDSelector.INVOICES:
+               if (foundUser.Parts.Remove(modelId))
                {
-                  var update = Builders<IUserModel>.Update.Set((user) => user.Invoices, foundUser.Invoices);
+                  var update = Builders<IUserModel>.Update.Set((user) => user.Parts, foundUser.Parts);
                   var result = await UserCollection.UpdateOneAsync(user => user._id == userId, update);
                   if (result.IsAcknowledged)
                   {
@@ -134,9 +135,9 @@ public class UserService : IUserService
                }
                return false;
             case ModelIDSelector.BINS:
-               if (foundUser.Bins.Remove(modelId))
+               if (foundUser.Parts.Remove(modelId))
                {
-                  var update = Builders<IUserModel>.Update.Set((user) => user.Bins, foundUser.Bins);
+                  var update = Builders<IUserModel>.Update.Set((user) => user.Parts, foundUser.Parts);
                   var result = await UserCollection.UpdateOneAsync(user => user._id == userId, update);
                   if (result.IsAcknowledged)
                   {
@@ -148,7 +149,48 @@ public class UserService : IUserService
                throw new ArgumentOutOfRangeException(nameof(selector));
          }
       }
-      return false;
+      throw new ModelNotFoundException("UserModel", "User not found.");
+   }
+
+   public async Task<bool> AppendModelToUserAsync(string userId, string modelId, ModelIDSelector selector)
+   {
+      var foundUser = (await UserCollection.FindAsync(user => user._id == userId)).FirstOrDefault();
+      if (foundUser != null)
+      {
+         switch (selector)
+         {
+            case ModelIDSelector.PARTS:
+               foundUser.Parts.Add(modelId);
+               var update = Builders<IUserModel>.Update.Set((user) => user.Parts, foundUser.Parts);
+               var result = await UserCollection.UpdateOneAsync(user => user._id == userId, update);
+               if (result.IsAcknowledged)
+               {
+                  return result.ModifiedCount > 0;
+               }
+               return false;
+            case ModelIDSelector.INVOICES:
+               foundUser.Invoices.Add(modelId);
+               update = Builders<IUserModel>.Update.Set((user) => user.Invoices, foundUser.Invoices);
+               result = await UserCollection.UpdateOneAsync(user => user._id == userId, update);
+               if (result.IsAcknowledged)
+               {
+                  return result.ModifiedCount > 0;
+               }
+               return false;
+            case ModelIDSelector.BINS:
+               foundUser.Bins.Add(modelId);
+               update = Builders<IUserModel>.Update.Set((user) => user.Bins, foundUser.Bins);
+               result = await UserCollection.UpdateOneAsync(user => user._id == userId, update);
+               if (result.IsAcknowledged)
+               {
+                  return result.ModifiedCount > 0;
+               }
+               return false;
+            default:
+               throw new ArgumentOutOfRangeException(nameof(selector));
+         }
+      }
+      throw new ModelNotFoundException("UserModel", "User not found.");
    }
    #endregion
 

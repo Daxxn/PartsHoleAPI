@@ -1,19 +1,20 @@
 ﻿using MongoDB.Driver;
 
-using PartsHoleLib.Enums;
 using PartsHoleLib.Interfaces;
 
-namespace PartsHoleAPI.DBServices
-{
-   public interface IUserService
-   {
-      IMongoCollection<IUserModel> UserCollection { get; init; }
+using PartsHoleRestLibrary.Enums;
 
-      Task<bool> AddToDatabaseAsync(IUserModel data);
-      Task<bool> DeleteFromDatabaseAsync(string id);
-      Task<IUserModel?> GetFromDatabaseAsync(string id);
-      Task<IUserData?> GetUserDataFromDatabaseAsync(IUserModel user);
-      Task<bool> UpdateDatabaseAsync(string id, IUserModel data);
-      Task<bool> RemoveModelFromUserAsync(string userId, string modelId, ModelIDSelector selector);
-   }
+namespace PartsHoleAPI.DBServices;
+
+public interface IUserService
+{
+   IMongoCollection<IUserModel> UserCollection { get; init; }
+
+   Task<bool> AddToDatabaseAsync(IUserModel data);
+   Task<bool> DeleteFromDatabaseAsync(string id);
+   Task<IUserModel?> GetFromDatabaseAsync(string id);
+   Task<IUserData?> GetUserDataFromDatabaseAsync(IUserModel user);
+   Task<bool> UpdateDatabaseAsync(string id, IUserModel data);
+   Task<bool> RemoveModelFromUserAsync(string userId, string modelId, ModelIDSelector selector);
+   Task<bool> AppendModelToUserAsync(string userId, string modelId, ModelIDSelector selector);
 }
