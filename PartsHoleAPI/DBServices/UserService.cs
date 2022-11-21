@@ -6,25 +6,26 @@ using MongoDB.Driver;
 using PartsHoleAPI.Utils;
 
 using PartsHoleLib;
+using PartsHoleLib.Enums;
 using PartsHoleLib.Interfaces;
 
 namespace PartsHoleAPI.DBServices;
 
-public class UserCollection : IUserCollection
+public class UserService : IUserService
 {
    #region Local Props
-   public IMongoCollection<IUserModel> Collection { get; init; }
+   public IMongoCollection<IUserModel> UserCollection { get; init; }
    private IMongoCollection<IPartModel> PartsCollection { get; init; }
    private IMongoCollection<IInvoiceModel> InvoicesCollection { get; init; }
    private IMongoCollection<IBinModel> BinCollection { get; set; }
    #endregion
 
    #region Constructors
-   public UserCollection(IOptions<DatabaseSettings> settings)
+   public UserService(IOptions<DatabaseSettings> settings)
    {
       var client = new MongoClient(settings.Value.ConnectionString);
       var db = client.GetDatabase(settings.Value.DatabaseName);
-      Collection = db.GetCollection<IUserModel>(settings.Value.UsersCollection);
+      UserCollection = db.GetCollection<IUserModel>(settings.Value.UsersCollection);
       PartsCollection = db.GetCollection<IPartModel>(settings.Value.PartsCollection);
       InvoicesCollection = db.GetCollection<IInvoiceModel>(settings.Value.InvoicesCollection);
       BinCollection = db.GetCollection<IBinModel>(settings.Value.BinsCollection);
@@ -34,7 +35,7 @@ public class UserCollection : IUserCollection
    #region Methods
    public async Task<IUserModel?> GetFromDatabaseAsync(string id)
    {
-      var result = await Collection.FindAsync(x => x._id == id);
+      var result = await UserCollection.FindAsync(x => x._id == id);
       if (result == null)
          return null;
       var user = await result.FirstOrDefaultAsync();
@@ -69,19 +70,20 @@ public class UserCollection : IUserCollection
             data.Bins = await binResult.ToListAsync();
          }
       }
+
       return data;
    }
 
    public async Task<bool> AddToDatabaseAsync(IUserModel data)
    {
-      var result = await Collection.FindAsync(x => x._id == data._id);
+      var result = await UserCollection.FindAsync(x => x._id == data._id);
       if (result is null)
          return false;
 
       var foundUsers = await result.ToListAsync();
       if (foundUsers.Count == 0)
       {
-         await Collection.InsertOneAsync(data);
+         await UserCollection.InsertOneAsync(data);
          return true;
       }
       return false;
@@ -90,15 +92,63 @@ public class UserCollection : IUserCollection
    public async Task<bool> UpdateDatabaseAsync(string id, IUserModel data)
    {
       var filter = Builders<IUserModel>.Filter.Where((u) => u._id == id);
-      var result = await Collection.ReplaceOneAsync(filter, data);
+      var result = await UserCollection.ReplaceOneAsync(filter, data);
       return result is null ? false : result.ModifiedCount > 0;
    }
 
    public async Task<bool> DeleteFromDatabaseAsync(string id)
    {
       var filter = Builders<IUserModel>.Filter.Where((u) => u._id == id);
-      var result = await Collection.DeleteOneAsync(filter);
+      var result = await UserCollection.DeleteOneAsync(filter);
       return result != null && result?.DeletedCount > 0;
+   }
+
+   public async Task<bool> RemoveModelFromUserAsync(string userId, string modelId, ModelIDSelector selector)
+   {
+      var foundUser = (await UserCollection.FindAsync(user => user._id == userId)).FirstOrDefault();
+      if (foundUser != null)
+      {
+         switch (selector)
+         {
+            case ModelIDSelector.PARTS:
+               if (foundUser.Parts.Remove(modelId))
+               {
+                  //var result = await UserCollection.ReplaceOneAsync(user => user._id == userId, foundUser);
+                  var update = Builders<IUserModel>.Update.Set((user) => user.Parts, foundUser.Parts);
+                  var result = await UserCollection.UpdateOneAsync(user => user._id == userId, update);
+                  if (result.IsAcknowledged)
+                  {
+                     return result.ModifiedCount > 0;
+                  }
+               }
+               return false;
+            case ModelIDSelector.INVOICE:
+               if (foundUser.Invoices.Remove(modelId))
+               {
+                  var update = Builders<IUserModel>.Update.Set((user) => user.Invoices, foundUser.Invoices);
+                  var result = await UserCollection.UpdateOneAsync(user => user._id == userId, update);
+                  if (result.IsAcknowledged)
+                  {
+                     return result.ModifiedCount > 0;
+                  }
+               }
+               return false;
+            case ModelIDSelector.BINS:
+               if (foundUser.Bins.Remove(modelId))
+               {
+                  var update = Builders<IUserModel>.Update.Set((user) => user.Bins, foundUser.Bins);
+                  var result = await UserCollection.UpdateOneAsync(user => user._id == userId, update);
+                  if (result.IsAcknowledged)
+                  {
+                     return result.ModifiedCount > 0;
+                  }
+               }
+               return false;
+            default:
+               throw new ArgumentOutOfRangeException(nameof(selector));
+         }
+      }
+      return false;
    }
    #endregion
 

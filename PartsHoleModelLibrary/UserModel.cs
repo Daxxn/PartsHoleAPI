@@ -1,6 +1,7 @@
 ﻿using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
+using PartsHoleLib.Enums;
 using PartsHoleLib.Interfaces;
 
 namespace PartsHoleLib;

@@ -7,6 +7,7 @@ using MongoDB.Bson.Serialization.Serializers;
 using PartsHoleAPI.DBServices;
 
 using PartsHoleLib;
+using PartsHoleLib.Enums;
 using PartsHoleLib.Interfaces;
 
 using PartsHoleRestLibrary.Requests;
@@ -18,7 +19,7 @@ namespace PartsHoleAPI.Controllers;
 [ApiController]
 public class UserController : ControllerBase
 {
-   private readonly IUserCollection _userService;
+   private readonly IUserService _userService;
    private readonly ICollectionService<IPartModel> _partsService;
    private readonly ICollectionService<IBinModel> _binService;
    private readonly IInvoiceService _invoiceService;
@@ -26,7 +27,7 @@ public class UserController : ControllerBase
 
    public UserController(
       ILogger<UserController> logger,
-      IUserCollection userService,
+      IUserService userService,
       ICollectionService<IPartModel> partsService,
       ICollectionService<IBinModel> binService,
       IInvoiceService invoiceService)
@@ -143,14 +144,14 @@ public class UserController : ControllerBase
    ///   </item>
    ///   <item>
    ///      <term>BODY</term>
-   ///      <description><see cref="AppendRequestModel"/> <paramref name="data"/></description>
+   ///      <description><see cref="RequestUpdateModel"/> <paramref name="data"/></description>
    ///   </item>
    /// </list>
    /// </summary>
    /// <param name="data"><see cref="IUserModel"/> ID and <see cref="IPartModel"/> ID.</param>
    /// <returns>True if successful, otherwise False.</returns>
    [HttpPost("add-part")]
-   public async Task<ActionResult<APIResponse<bool>>> PostAppendPart([FromBody] AppendRequestModel data)
+   public async Task<ActionResult<APIResponse<bool>>> PostAppendPart([FromBody] RequestUpdateModel data)
    {
       if (data.UserId is null)
          return BadRequest(new APIResponse<bool>(false, "POST", "Unable to find user ID."));
@@ -177,14 +178,14 @@ public class UserController : ControllerBase
    ///   </item>
    ///   <item>
    ///      <term>BODY</term>
-   ///      <description><see cref="AppendRequestModel"/> <paramref name="data"/></description>
+   ///      <description><see cref="RequestUpdateModel"/> <paramref name="data"/></description>
    ///   </item>
    /// </list>
    /// </summary>
    /// <param name="data"><see cref="IUserModel"/> ID and <see cref="IInvoiceModel"/> ID.</param>
    /// <returns>True if successful, otherwise False.</returns>
    [HttpPost("add-invoice")]
-   public async Task<ActionResult<APIResponse<bool>>> PostAppendInvoice([FromBody] AppendRequestModel data)
+   public async Task<ActionResult<APIResponse<bool>>> PostAppendInvoice([FromBody] RequestUpdateModel data)
    {
       if (data.UserId is null)
          return BadRequest(new APIResponse<bool>(false, "POST", "Unable to find user ID."));
@@ -211,14 +212,14 @@ public class UserController : ControllerBase
    ///   </item>
    ///   <item>
    ///      <term>BODY</term>
-   ///      <description><see cref="AppendRequestModel"/> <paramref name="data"/></description>
+   ///      <description><see cref="RequestUpdateModel"/> <paramref name="data"/></description>
    ///   </item>
    /// </list>
    /// </summary>
    /// <param name="data"><see cref="IUserModel"/> ID and <see cref="IBinModel"/> ID.</param>
    /// <returns>True if successful, otherwise False.</returns>
    [HttpPost("add-bin")]
-   public async Task<ActionResult<APIResponse<bool>>> PostAppendBin([FromBody] AppendRequestModel data)
+   public async Task<ActionResult<APIResponse<bool>>> PostAppendBin([FromBody] RequestUpdateModel data)
    {
       if (data.UserId is null)
          return BadRequest(new APIResponse<bool>(false, "POST", "Unable to find user ID."));
@@ -273,7 +274,40 @@ public class UserController : ControllerBase
       string.IsNullOrEmpty(id)
          ? BadRequest(new APIResponse<bool>(false, "DELETE", "Unable to find user ID."))
          : await _userService.DeleteFromDatabaseAsync(id)
-            ? Ok(new APIResponse<bool>(true, "DELETE", $"User {id} Deleted"))
+            ? Ok(new APIResponse<bool>(true, "DELETE", $"User {id} Deleted."))
             : BadRequest(new APIResponse<bool>(false, "DELETE", "Unable to delete user."));
+
+   /// <summary>
+   /// Removes a model <see cref="ObjectId"/> from the <see cref="IUserModel"/>.
+   /// <list type="table">
+   ///   <item>
+   ///      <term>DELETE</term>
+   ///      <description>api/user/{<paramref name="id"/>}</description>
+   ///   </item>
+   ///   <item>
+   ///      <term>BODY</term>
+   ///      <description><see cref="RequestUpdateListModel"/> <paramref name="requestData"/></description>
+   ///   </item>
+   /// </list>
+   /// </summary>
+   /// <param name="requestData">Contains the User <see cref="ObjectId"/>, Model <see cref="ObjectId"/>, and the Property <see cref="ModelIDSelector"/>.</param>
+   /// <returns>True if successful, otherwise False.</returns>
+   [HttpDelete("remove-model")]
+   public async Task<ActionResult<APIResponse<bool>>> DeleteRemoveModel([FromBody] RequestUpdateListModel requestData)
+   {
+      if (string.IsNullOrEmpty(requestData.UserId))
+         return BadRequest(new APIResponse<bool>(false, "DELETE", "User ID was not provided."));
+      if (string.IsNullOrEmpty(requestData.ModelId))
+         return BadRequest(new APIResponse<bool>(false, "DELETE", "Model ID was not provided."));
+      var modelId = (ModelIDSelector?)requestData.PropId ?? ModelIDSelector.NONE;
+      if (modelId == ModelIDSelector.NONE)
+         return BadRequest(new APIResponse<bool>(false, "DELETE", "Property type does not match."));
+      var result = await _userService.RemoveModelFromUserAsync(requestData.UserId, requestData.ModelId, modelId);
+      if (result)
+      {
+         return Ok(new APIResponse<bool>(true, "DELETE"));
+      }
+      return BadRequest(new APIResponse<bool>(false, "DELETE", "Failed to remove model."));
+   }
    #endregion
 }

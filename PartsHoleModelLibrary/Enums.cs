@@ -1,5 +1,13 @@
 ﻿namespace PartsHoleLib.Enums;
 
+public enum ModelIDSelector
+{
+   PARTS = 0,
+   INVOICE = 1,
+   BINS = 2,
+   NONE = -1,
+}
+
 public enum EIAStandard
 {
    E6 = 20,

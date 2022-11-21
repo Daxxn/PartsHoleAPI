@@ -87,7 +87,7 @@ namespace PartsHoleAPI
          #endregion
 
          #region Register endpoint Services
-         builder.Services.AddSingleton<IUserCollection, UserCollection>();
+         builder.Services.AddSingleton<IUserService, UserService>();
          builder.Services.AddSingleton<ICollectionService<IPartModel>, CollectionService<IPartModel>>();
          builder.Services.AddSingleton<ICollectionService<IBinModel>, CollectionService<IBinModel>>();
          builder.Services.AddSingleton<IInvoiceService, InvoiceService>();
