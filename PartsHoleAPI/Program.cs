@@ -4,6 +4,7 @@ using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
 
 using PartsHoleAPI.DBServices;
+using PartsHoleAPI.DBServices.Interfaces;
 using PartsHoleAPI.Utils;
 
 using PartsHoleLib;
@@ -11,7 +12,7 @@ using PartsHoleLib.Interfaces;
 
 namespace PartsHoleAPI
 {
-   public class Program
+    public class Program
    {
       public static void Main(string[] args)
       {
@@ -71,6 +72,9 @@ namespace PartsHoleAPI
          BsonSerializer.RegisterSerializer(
             new ImpliedImplementationInterfaceSerializer<IUserData, UserData>(
                BsonSerializer.LookupSerializer<UserData>()));
+         BsonSerializer.RegisterSerializer(
+            new ImpliedImplementationInterfaceSerializer<IPartNumber, PartNumber>(
+               BsonSerializer.LookupSerializer<PartNumber>()));
          #endregion
 
          #region Register models
@@ -79,6 +83,7 @@ namespace PartsHoleAPI
          builder.Services.AddScoped<IPartModel, PartModel>();
          builder.Services.AddScoped<IBinModel, BinModel>();
          builder.Services.AddScoped<IInvoiceModel, InvoiceModel>();
+         builder.Services.AddScoped<IPartNumber, PartNumber>();
          #endregion
 
          #region Register Transient Models
@@ -91,6 +96,7 @@ namespace PartsHoleAPI
          builder.Services.AddSingleton<ICollectionService<IPartModel>, CollectionService<IPartModel>>();
          builder.Services.AddSingleton<ICollectionService<IBinModel>, CollectionService<IBinModel>>();
          builder.Services.AddSingleton<IInvoiceService, InvoiceService>();
+         builder.Services.AddSingleton<IPartNumberService, PartNumberService>();
          #endregion
 
          var app = builder.Build();

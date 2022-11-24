@@ -14,15 +14,14 @@ namespace PartsHoleAPI.Utils
       public string UsersCollection { get; set; } = null!;
       public string BinsCollection { get; set; } = null!;
       public string InvoicesCollection { get; set; } = null!;
+      public string PartNumberCollection { get; set; } = null!;
 
       public string DevelopmentUserName { get; set; } = null!;
       public string DevelopmentPassword { get; set; } = null!;
       public string ProductionUserName { get; set; } = null!;
       public string ProductionPassword { get; set; } = null!;
 
-      public DatabaseSettings()
-      {
-      }
+      public DatabaseSettings() { }
       #endregion
 
       #region Methods

@@ -1,9 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
 using MongoDB.Bson;
-
-using PartsHoleAPI.DBServices;
-
+using PartsHoleAPI.DBServices.Interfaces;
 using PartsHoleLib;
 using PartsHoleLib.Interfaces;
 

@@ -1,8 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
-
-using PartsHoleAPI.DBServices;
-
+using PartsHoleAPI.DBServices.Interfaces;
 using PartsHoleLib;
 using PartsHoleLib.Interfaces;
 

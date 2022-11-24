@@ -1,10 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-
-using PartsHoleAPI.DBServices;
-
+using PartsHoleAPI.DBServices.Interfaces;
+using PartsHoleLib;
 using PartsHoleLib.Interfaces;
-
-using PartsHoleModelLibrary;
 
 using PartsHoleRestLibrary.Exceptions;
 using PartsHoleRestLibrary.Requests;
@@ -30,7 +27,8 @@ public class PartNumController : ControllerBase
    }
 
    /// <summary>
-   /// Generate New part number based on the provided
+   /// !!NOT FINISHED!!
+   /// Generate New part number based on the provided.
    /// </summary>
    /// <param name="requestData">Type and SubType request data.</param>
    [HttpPost]
@@ -50,11 +48,12 @@ public class PartNumController : ControllerBase
          var allParts = await _partsService.GetFromDatabaseAsync(foundUser.Parts.ToArray());
          if (allParts is null)
             throw new ModelNotFoundException("PartModel[]", "Part models not found.");
-         var allPartNumbers = allParts.Select(x => PartNumber.Parse(x.PartNumber));
+         var allPartNumbers = new PartNumberCollection(allParts.Select(x => PartNumber.Parse(x.PartNumber)));
          if (!allPartNumbers.Any())
             return new APIResponse<string>("POST", "No part numbers found.");
 
          allPartNumbers.ToList().Sort();
+         throw new NotImplementedException();
       }
       catch (ModelNotFoundException e)
       {
