@@ -5,7 +5,7 @@ using PartsHoleLib.Interfaces;
 
 namespace PartsHoleLib;
 
-public class BinModel : IBinModel
+public class BinModel : IModel
 {
    [BsonId]
    [BsonRepresentation(BsonType.ObjectId)]

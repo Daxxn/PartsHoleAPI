@@ -14,14 +14,14 @@ namespace PartsHoleAPI.Controllers;
 public class PartsController : ControllerBase
 {
    #region Props
-   private readonly ICollectionService<IPartModel> _collection;
+   private readonly ICollectionService<PartModel> _collection;
    private readonly ILogger<PartsController> _logger;
    #endregion
 
    #region Constructors
    public PartsController(
       ILogger<PartsController> logger,
-      ICollectionService<IPartModel> partsCollection
+      ICollectionService<PartModel> partsCollection
       )
    {
       _collection = partsCollection;
@@ -42,7 +42,7 @@ public class PartsController : ControllerBase
    /// <param name="id"><see cref="ObjectId"/> to search for.</param>
    /// <returns><see cref="IPartModel"/> found. Null if unable.</returns>
    [HttpGet("{id:length(24)}")]
-   public async Task<ActionResult<IPartModel?>> Get(string id)
+   public async Task<ActionResult<PartModel?>> Get(string id)
    {
       if (string.IsNullOrEmpty(id)) return BadRequest();
       return Ok(await _collection.GetFromDatabaseAsync(id));
@@ -62,14 +62,14 @@ public class PartsController : ControllerBase
    /// </list>
    /// </summary>
    /// <param name="ids"><see cref="List{T}"/> of <see cref="ObjectId"/>s to get.</param>
-   /// <returns><see cref="List{T}"/> of <see cref="IPartModel"/>s. Null if unable.</returns>
+   /// <returns><see cref="List{T}"/> of <see cref="PartModel"/>s. Null if unable.</returns>
    [HttpPost("get-many")]
-   public async Task<ActionResult<APIResponse<IEnumerable<IPartModel>?>>> PostGetManyParts([FromBody] string[] ids)
+   public async Task<ActionResult<APIResponse<IEnumerable<PartModel>?>>> PostGetManyParts([FromBody] string[] ids)
    {
       if (ids is null)
-         return BadRequest(new APIResponse<IEnumerable<IPartModel>?>(null, "POST", "No part IDs found."));
+         return BadRequest(new APIResponse<IEnumerable<PartModel>?>(null, "POST", "No part IDs found."));
       var data = await _collection.GetFromDatabaseAsync(ids);
-      return Ok(new APIResponse<IEnumerable<IPartModel>?>(data, "POST"));
+      return Ok(new APIResponse<IEnumerable<PartModel>?>(data, "POST"));
    }
 
    /// <summary>
@@ -81,11 +81,11 @@ public class PartsController : ControllerBase
    ///   </item>
    ///   <item>
    ///      <term>BODY</term>
-   ///      <description><see cref="IPartModel"/> <paramref name="newPart"/></description>
+   ///      <description><see cref="PartModel"/> <paramref name="newPart"/></description>
    ///   </item>
    /// </list>
    /// </summary>
-   /// <param name="newPart">New <see cref="IPartModel"/> to create.</param>
+   /// <param name="newPart">New <see cref="PartModel"/> to create.</param>
    /// <returns><see langword="true"/> if successful, otherwise <see langword="false"/>.</returns>
    [HttpPost]
    public async Task<ActionResult<APIResponse<bool>>> Post([FromBody] PartModel newPart)
@@ -95,7 +95,7 @@ public class PartsController : ControllerBase
    }
 
    /// <summary>
-   /// Creates multiple <see cref="IPartModel"/>s.
+   /// Creates multiple <see cref="PartModel"/>s.
    /// <list type="table">
    ///   <item>
    ///      <term>POST</term>
@@ -103,11 +103,11 @@ public class PartsController : ControllerBase
    ///   </item>
    ///   <item>
    ///      <term>BODY</term>
-   ///      <description><see cref="List{T}"/> of <see cref="IPartModel"/> <paramref name="newParts"/></description>
+   ///      <description><see cref="List{T}"/> of <see cref="PartModel"/> <paramref name="newParts"/></description>
    ///   </item>
    /// </list>
    /// </summary>
-   /// <param name="newParts"><see cref="List{T}"/> of new <see cref="IPartModel"/>s to create.</param>
+   /// <param name="newParts"><see cref="List{T}"/> of new <see cref="PartModel"/>s to create.</param>
    /// <returns><see cref="List{T}"/> of <see cref="bool"/>s where; <see langword="true"/> if successful, otherwise <see langword="false"/>.</returns>
    [HttpPost("many")]
    public async Task<ActionResult<APIResponse<IEnumerable<bool>?>>> PostMany([FromBody] PartModel[] newParts)
@@ -117,7 +117,7 @@ public class PartsController : ControllerBase
    }
 
    /// <summary>
-   /// Updates an <see cref="IPartModel"/>.
+   /// Updates an <see cref="PartModel"/>.
    /// <list type="table">
    ///   <item>
    ///      <term>PUT</term>
@@ -125,11 +125,11 @@ public class PartsController : ControllerBase
    ///   </item>
    ///   <item>
    ///      <term>BODY</term>
-   ///      <description><see cref="IPartModel"/> <paramref name="updatedPart"/></description>
+   ///      <description><see cref="PartModel"/> <paramref name="updatedPart"/></description>
    ///   </item>
    /// </list>
    /// </summary>
-   /// <param name="updatedPart">Updated <see cref="IPartModel"/> data.</param>
+   /// <param name="updatedPart">Updated <see cref="PartModel"/> data.</param>
    /// <returns><see langword="true"/> if successful, otherwise <see langword="false"/></returns>
    [HttpPut]
    public async Task<ActionResult<APIResponse<bool>>> Put([FromBody] PartModel updatedPart)
@@ -140,7 +140,7 @@ public class PartsController : ControllerBase
    }
 
    /// <summary>
-   /// Update multiple <see cref="IPartModel"/>s.
+   /// Update multiple <see cref="PartModel"/>s.
    /// <list type="table">
    ///   <item>
    ///      <term>PUT</term>
@@ -148,11 +148,11 @@ public class PartsController : ControllerBase
    ///   </item>
    ///   <item>
    ///      <term>BODY</term>
-   ///      <description><see cref="List{T}"/> <see cref="IPartModel"/> <paramref name="updatedParts"/></description>
+   ///      <description><see cref="List{T}"/> <see cref="PartModel"/> <paramref name="updatedParts"/></description>
    ///   </item>
    /// </list>
    /// </summary>
-   /// <param name="updatedParts"><see cref="List{T}"/> of <see cref="IPartModel"/>s to update.</param>
+   /// <param name="updatedParts"><see cref="List{T}"/> of <see cref="PartModel"/>s to update.</param>
    /// <returns><see cref="List{T}"/> of <see cref="bool"/>s according to the index where; <see langword="true"/> if successful, otherwise <see langword="false"/>.</returns>
    [HttpPut("many")]
    public async Task<ActionResult<APIResponse<IEnumerable<bool>?>>> PutMany([FromBody] PartModel[] updatedParts)
@@ -163,7 +163,7 @@ public class PartsController : ControllerBase
    }
 
    /// <summary>
-   /// Delete an <see cref="IPartModel"/> from the database.
+   /// Delete an <see cref="PartModel"/> from the database.
    /// <list type="table">
    ///   <item>
    ///      <term>DELETE</term>
@@ -171,7 +171,7 @@ public class PartsController : ControllerBase
    ///   </item>
    /// </list>
    /// </summary>
-   /// <param name="id">The <see cref="ObjectId"/> of the <see cref="IPartModel"/> to delete.</param>
+   /// <param name="id">The <see cref="ObjectId"/> of the <see cref="PartModel"/> to delete.</param>
    /// <returns><see langword="true"/> if successful, otherwise <see langword="false"/></returns>
    [HttpDelete("{id:length(24)}")]
    public async Task<ActionResult<APIResponse<bool>>> Delete(string id)
@@ -182,7 +182,7 @@ public class PartsController : ControllerBase
    }
 
    /// <summary>
-   /// Delete multiple <see cref="IPartModel"/>s from the database.
+   /// Delete multiple <see cref="PartModel"/>s from the database.
    /// <list type="table">
    ///   <item>
    ///      <term>DELETE</term>
@@ -195,7 +195,7 @@ public class PartsController : ControllerBase
    /// </list>
    /// </summary>
    /// <param name="ids"><see cref="List{T}"/> of <see cref="ObjectId"/>s to delete.</param>
-   /// <returns>Number (<see cref="int"/>) of <see cref="IPartModel"/>s successfully deleted.</returns>
+   /// <returns>Number (<see cref="int"/>) of <see cref="PartModel"/>s successfully deleted.</returns>
    [HttpDelete("many")]
    public async Task<ActionResult<APIResponse<int>>> DeleteMany([FromBody] string[] ids)
    {

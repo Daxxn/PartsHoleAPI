@@ -16,10 +16,10 @@ namespace PartsHoleAPI.DBServices;
 public class UserService : IUserService
 {
    #region Local Props
-   public IMongoCollection<IUserModel> UserCollection { get; init; }
-   private IMongoCollection<IPartModel> PartsCollection { get; init; }
-   private IMongoCollection<IInvoiceModel> InvoicesCollection { get; init; }
-   private IMongoCollection<IBinModel> BinCollection { get; set; }
+   public IMongoCollection<UserModel> UserCollection { get; init; }
+   private IMongoCollection<PartModel> PartsCollection { get; init; }
+   private IMongoCollection<InvoiceModel> InvoicesCollection { get; init; }
+   private IMongoCollection<BinModel> BinCollection { get; set; }
    #endregion
 
    #region Constructors
@@ -27,15 +27,15 @@ public class UserService : IUserService
    {
       var client = new MongoClient(settings.Value.ConnectionString);
       var db = client.GetDatabase(settings.Value.DatabaseName);
-      UserCollection = db.GetCollection<IUserModel>(settings.Value.UsersCollection);
-      PartsCollection = db.GetCollection<IPartModel>(settings.Value.PartsCollection);
-      InvoicesCollection = db.GetCollection<IInvoiceModel>(settings.Value.InvoicesCollection);
-      BinCollection = db.GetCollection<IBinModel>(settings.Value.BinsCollection);
+      UserCollection = db.GetCollection<UserModel>(settings.Value.UsersCollection);
+      PartsCollection = db.GetCollection<PartModel>(settings.Value.PartsCollection);
+      InvoicesCollection = db.GetCollection<InvoiceModel>(settings.Value.InvoicesCollection);
+      BinCollection = db.GetCollection<BinModel>(settings.Value.BinsCollection);
    }
    #endregion
 
    #region Methods
-   public async Task<IUserModel?> GetFromDatabaseAsync(string id)
+   public async Task<UserModel?> GetFromDatabaseAsync(string id)
    {
       var result = await UserCollection.FindAsync(x => x._id == id);
       if (result == null)
@@ -44,7 +44,7 @@ public class UserService : IUserService
       return user;
    }
 
-   public async Task<IUserData?> GetUserDataFromDatabaseAsync(IUserModel user)
+   public async Task<UserData?> GetUserDataFromDatabaseAsync(UserModel user)
    {
       UserData data = new UserData();
 
@@ -76,7 +76,7 @@ public class UserService : IUserService
       return data;
    }
 
-   public async Task<bool> AddToDatabaseAsync(IUserModel data)
+   public async Task<bool> AddToDatabaseAsync(UserModel data)
    {
       var result = await UserCollection.FindAsync(x => x._id == data._id);
       if (result is null)
@@ -91,16 +91,16 @@ public class UserService : IUserService
       return false;
    }
 
-   public async Task<bool> UpdateDatabaseAsync(string id, IUserModel data)
+   public async Task<bool> UpdateDatabaseAsync(string id, UserModel data)
    {
-      var filter = Builders<IUserModel>.Filter.Where((u) => u._id == id);
+      var filter = Builders<UserModel>.Filter.Where((u) => u._id == id);
       var result = await UserCollection.ReplaceOneAsync(filter, data);
       return result is null ? false : result.ModifiedCount > 0;
    }
 
    public async Task<bool> DeleteFromDatabaseAsync(string id)
    {
-      var filter = Builders<IUserModel>.Filter.Where((u) => u._id == id);
+      var filter = Builders<UserModel>.Filter.Where((u) => u._id == id);
       var result = await UserCollection.DeleteOneAsync(filter);
       return result != null && result?.DeletedCount > 0;
    }
@@ -115,7 +115,7 @@ public class UserService : IUserService
             case ModelIDSelector.PARTS:
                if (foundUser.Parts.Remove(modelId))
                {
-                  var update = Builders<IUserModel>.Update.Set((user) => user.Parts, foundUser.Parts);
+                  var update = Builders<UserModel>.Update.Set((user) => user.Parts, foundUser.Parts);
                   var result = await UserCollection.UpdateOneAsync(user => user._id == userId, update);
                   if (result.IsAcknowledged)
                   {
@@ -126,7 +126,7 @@ public class UserService : IUserService
             case ModelIDSelector.INVOICES:
                if (foundUser.Parts.Remove(modelId))
                {
-                  var update = Builders<IUserModel>.Update.Set((user) => user.Parts, foundUser.Parts);
+                  var update = Builders<UserModel>.Update.Set((user) => user.Parts, foundUser.Parts);
                   var result = await UserCollection.UpdateOneAsync(user => user._id == userId, update);
                   if (result.IsAcknowledged)
                   {
@@ -137,7 +137,7 @@ public class UserService : IUserService
             case ModelIDSelector.BINS:
                if (foundUser.Parts.Remove(modelId))
                {
-                  var update = Builders<IUserModel>.Update.Set((user) => user.Parts, foundUser.Parts);
+                  var update = Builders<UserModel>.Update.Set((user) => user.Parts, foundUser.Parts);
                   var result = await UserCollection.UpdateOneAsync(user => user._id == userId, update);
                   if (result.IsAcknowledged)
                   {
@@ -161,7 +161,7 @@ public class UserService : IUserService
          {
             case ModelIDSelector.PARTS:
                foundUser.Parts.Add(modelId);
-               var update = Builders<IUserModel>.Update.Set((user) => user.Parts, foundUser.Parts);
+               var update = Builders<UserModel>.Update.Set((user) => user.Parts, foundUser.Parts);
                var result = await UserCollection.UpdateOneAsync(user => user._id == userId, update);
                if (result.IsAcknowledged)
                {
@@ -170,7 +170,7 @@ public class UserService : IUserService
                return false;
             case ModelIDSelector.INVOICES:
                foundUser.Invoices.Add(modelId);
-               update = Builders<IUserModel>.Update.Set((user) => user.Invoices, foundUser.Invoices);
+               update = Builders<UserModel>.Update.Set((user) => user.Invoices, foundUser.Invoices);
                result = await UserCollection.UpdateOneAsync(user => user._id == userId, update);
                if (result.IsAcknowledged)
                {
@@ -179,7 +179,7 @@ public class UserService : IUserService
                return false;
             case ModelIDSelector.BINS:
                foundUser.Bins.Add(modelId);
-               update = Builders<IUserModel>.Update.Set((user) => user.Bins, foundUser.Bins);
+               update = Builders<UserModel>.Update.Set((user) => user.Bins, foundUser.Bins);
                result = await UserCollection.UpdateOneAsync(user => user._id == userId, update);
                if (result.IsAcknowledged)
                {

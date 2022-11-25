@@ -5,7 +5,7 @@ using PartsHoleLib.Interfaces;
 
 namespace PartsHoleLib;
 
-public class InvoiceModel : IInvoiceModel
+public class InvoiceModel : IModel
 {
    [BsonId]
    [BsonRepresentation(BsonType.ObjectId)]

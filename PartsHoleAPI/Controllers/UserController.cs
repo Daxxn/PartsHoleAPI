@@ -17,16 +17,16 @@ namespace PartsHoleAPI.Controllers;
 public class UserController : ControllerBase
 {
    private readonly IUserService _userService;
-   private readonly ICollectionService<IPartModel> _partsService;
-   private readonly ICollectionService<IBinModel> _binService;
+   private readonly ICollectionService<PartModel> _partsService;
+   private readonly ICollectionService<BinModel> _binService;
    private readonly IInvoiceService _invoiceService;
    private readonly ILogger<UserController> _logger;
 
    public UserController(
       ILogger<UserController> logger,
       IUserService userService,
-      ICollectionService<IPartModel> partsService,
-      ICollectionService<IBinModel> binService,
+      ICollectionService<PartModel> partsService,
+      ICollectionService<BinModel> binService,
       IInvoiceService invoiceService)
    {
       _userService = userService;
@@ -38,7 +38,7 @@ public class UserController : ControllerBase
 
    #region API Methods
    /// <summary>
-   /// Gets an <see cref="IUserModel"/> based on the given <see cref="ObjectId"/>.
+   /// Gets an <see cref="UserModel"/> based on the given <see cref="ObjectId"/>.
    /// <list type="table">
    ///   <listheader>
    ///      <term>Method</term>
@@ -50,10 +50,10 @@ public class UserController : ControllerBase
    ///   </item>
    /// </list>
    /// </summary>
-   /// <param name="id">The <see cref="ObjectId"/> of the <see cref="IUserModel"/>.</param>
-   /// <returns><see cref="IUserModel"/> if found. Otherwise null.</returns>
+   /// <param name="id">The <see cref="ObjectId"/> of the <see cref="UserModel"/>.</param>
+   /// <returns><see cref="UserModel"/> if found. Otherwise null.</returns>
    [HttpGet("{id:length(24)}")]
-   public async Task<ActionResult<IUserModel>> Get(string id)
+   public async Task<ActionResult<UserModel>> Get(string id)
    {
       if (string.IsNullOrEmpty(id))
       {
@@ -67,7 +67,7 @@ public class UserController : ControllerBase
    }
 
    /// <summary>
-   /// Gets the users data from the <see cref="IUserModel"/>.
+   /// Gets the users data from the <see cref="UserModel"/>.
    /// <list type="table">
    ///   <item>
    ///      <term>POST</term>
@@ -75,33 +75,33 @@ public class UserController : ControllerBase
    ///   </item>
    ///   <item>
    ///      <term>BODY</term>
-   ///      <description><see cref="IUserModel"/> <paramref name="user"/></description>
+   ///      <description><see cref="UserModel"/> <paramref name="user"/></description>
    ///   </item>
    /// </list>
    /// </summary>
-   /// <param name="user"><see cref="IUserModel"/> to get data for.</param>
-   /// <returns><see cref="IUserData"/> containing all the <paramref name="user"/> data.</returns>
+   /// <param name="user"><see cref="UserModel"/> to get data for.</param>
+   /// <returns><see cref="UserData"/> containing all the <paramref name="user"/> data.</returns>
    [HttpPost("data")]
-   public async Task<ActionResult<APIResponse<IUserData?>>> PostGetUserData([FromBody] UserModel user)
+   public async Task<ActionResult<APIResponse<UserData?>>> PostGetUserData([FromBody] UserModel user)
    {
       if (user is null)
       {
          _logger.LogWarning("Unable to construct user model from body.");
-         return BadRequest(new APIResponse<IUserData?>("POST", "No user data found in body."));
+         return BadRequest(new APIResponse<UserData?>("POST", "No user data found in body."));
       }
       if (user.Parts is null && user.Invoices is null)
       {
          _logger.LogWarning("No parts or invoice data found.");
-         return BadRequest(new APIResponse<IUserData?>("POST", "User has no data."));
+         return BadRequest(new APIResponse<UserData?>("POST", "User has no data."));
       }
       var response = await _userService.GetUserDataFromDatabaseAsync(user);
       return response is null
-         ? NotFound(new APIResponse<IUserData?>("POST", "No user data found Found"))
-         : Ok(new APIResponse<IUserData?>(response, "POST"));
+         ? NotFound(new APIResponse<UserData?>("POST", "No user data found Found"))
+         : Ok(new APIResponse<UserData?>(response, "POST"));
    }
 
    /// <summary>
-   /// Creates a new <see cref="IUserModel"/> and saves it to the database.
+   /// Creates a new <see cref="UserModel"/> and saves it to the database.
    /// <list type="table">
    ///   <item>
    ///      <term>POST</term>
@@ -109,11 +109,11 @@ public class UserController : ControllerBase
    ///   </item>
    ///   <item>
    ///      <term>BODY</term>
-   ///      <description><see cref="IUserModel"/> <paramref name="newUser"/></description>
+   ///      <description><see cref="UserModel"/> <paramref name="newUser"/></description>
    ///   </item>
    /// </list>
    /// </summary>
-   /// <param name="newUser"><see cref="IUserModel"/> to create.</param>
+   /// <param name="newUser"><see cref="UserModel"/> to create.</param>
    /// <returns>True if successful, otherwise False.</returns>
    [HttpPost]
    public async Task<ActionResult<APIResponse<bool>>> Post([FromBody] UserModel? newUser)
@@ -144,7 +144,7 @@ public class UserController : ControllerBase
    ///   </item>
    /// </list>
    /// </summary>
-   /// <param name="requestData"><see cref="IUserModel"/> ID, <see cref="IBinModel"/> ID, and <see cref="ModelIDSelector"/>.</param>
+   /// <param name="requestData"><see cref="UserModel"/> ID, <see cref="BinModel"/> ID, and <see cref="ModelIDSelector"/>.</param>
    /// <returns>True if successful, otherwise False.</returns>
    [HttpPost("add-model")]
    public async Task<ActionResult<APIResponse<bool>>> PostAppendModel([FromBody] RequestUpdateListModel requestData)
@@ -176,7 +176,7 @@ public class UserController : ControllerBase
    }
 
    /// <summary>
-   /// Updates an <see cref="IUserModel"/>.
+   /// Updates an <see cref="UserModel"/>.
    /// <list type="table">
    ///   <item>
    ///      <term>PUT</term>
@@ -184,11 +184,11 @@ public class UserController : ControllerBase
    ///   </item>
    ///   <item>
    ///      <term>BODY</term>
-   ///      <description><see cref="IUserModel"/> <paramref name="updatedUser"/></description>
+   ///      <description><see cref="UserModel"/> <paramref name="updatedUser"/></description>
    ///   </item>
    /// </list>
    /// </summary>
-   /// <param name="updatedUser">Udated <see cref="IUserModel"/>.</param>
+   /// <param name="updatedUser">Udated <see cref="UserModel"/>.</param>
    /// <returns>True if successful, otherwise False.</returns>
    [HttpPut]
    public async Task<ActionResult<APIResponse<bool>>> Put([FromBody] UserModel updatedUser) =>
@@ -197,7 +197,7 @@ public class UserController : ControllerBase
          : Ok(new APIResponse<bool>(await _userService.UpdateDatabaseAsync(updatedUser._id, updatedUser), "PUT"));
 
    /// <summary>
-   /// Deletes an <see cref="IUserModel"/> based on the <see cref="ObjectId"/>.
+   /// Deletes an <see cref="UserModel"/> based on the <see cref="ObjectId"/>.
    /// <list type="table">
    ///   <item>
    ///      <term>DELETE</term>
@@ -205,7 +205,7 @@ public class UserController : ControllerBase
    ///   </item>
    /// </list>
    /// </summary>
-   /// <param name="updatedUser">Udated <see cref="IUserModel"/>.</param>
+   /// <param name="id"><see cref="ObjectId"/> of the <see cref="UserModel"/> to delete.</param>
    /// <returns>True if successful, otherwise False.</returns>
    [HttpDelete("{id:length(24)}")]
    public async Task<ActionResult<APIResponse<bool>>> Delete(string id) =>
@@ -216,7 +216,7 @@ public class UserController : ControllerBase
             : BadRequest(new APIResponse<bool>(false, "DELETE", "Unable to delete user."));
 
    /// <summary>
-   /// Removes a model <see cref="ObjectId"/> from the <see cref="IUserModel"/>.
+   /// Removes a model <see cref="ObjectId"/> from the <see cref="UserModel"/>.
    /// <list type="table">
    ///   <item>
    ///      <term>DELETE</term>

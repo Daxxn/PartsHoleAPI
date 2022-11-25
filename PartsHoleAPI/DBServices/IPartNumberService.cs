@@ -7,7 +7,7 @@ using PartsHoleLib.Interfaces;
 
 namespace PartsHoleAPI.DBServices;
 
-public interface IPartNumberService : ICollectionService<IPartNumber>
+public interface IPartNumberService : ICollectionService<PartNumber>
 {
 
 }

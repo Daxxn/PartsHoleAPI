@@ -5,7 +5,7 @@ using PartsHoleLib.Interfaces;
 
 namespace PartsHoleLib;
 
-public class PartModel : IPartModel
+public class PartModel : IModel
 {
    #region Local
    [BsonId]

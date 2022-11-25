@@ -89,20 +89,10 @@ public class CollectionService<T> : ICollectionService<T> where T : class, IMode
    {
       var partData = data.ToList();
       var results = new List<bool>(partData.Count);
-      //await Parallel.ForEachAsync(data, async (d, token) =>
-      //{
-      //   if (token.IsCancellationRequested)
-      //      return;
-      //   var success = false;
-      //   if (!string.IsNullOrEmpty(d.Id))
-      //   {
-      //      success = await UpdateDatabaseAsync(d.Id, d);
-      //   }
-      //   var index = partData.IndexOf(d);
-      //   results.Insert(index, success);
-      //});
-      foreach (var d in partData)
+      await Parallel.ForEachAsync(data, async (d, token) =>
       {
+         if (token.IsCancellationRequested)
+            return;
          var success = false;
          if (!string.IsNullOrEmpty(d._id))
          {
@@ -110,7 +100,17 @@ public class CollectionService<T> : ICollectionService<T> where T : class, IMode
          }
          var index = partData.IndexOf(d);
          results.Insert(index, success);
-      }
+      });
+      //foreach (var d in partData)
+      //{
+      //   var success = false;
+      //   if (!string.IsNullOrEmpty(d._id))
+      //   {
+      //      success = await UpdateDatabaseAsync(d._id, d);
+      //   }
+      //   var index = partData.IndexOf(d);
+      //   results.Insert(index, success);
+      //}
       return results;
    }
 

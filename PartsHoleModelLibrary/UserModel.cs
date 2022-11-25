@@ -6,7 +6,7 @@ using PartsHoleLib.Interfaces;
 
 namespace PartsHoleLib;
 
-public class UserModel : IUserModel
+public class UserModel : IModel
 {
    [BsonId]
    [BsonRepresentation(BsonType.ObjectId)]

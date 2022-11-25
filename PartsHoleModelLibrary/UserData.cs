@@ -2,9 +2,9 @@
 
 namespace PartsHoleLib;
 
-public class UserData : IUserData
+public class UserData
 {
-   public List<IPartModel> Parts { get; set; } = null!;
-   public List<IInvoiceModel> Invoices { get; set; } = null!;
-   public List<IBinModel> Bins { get; set; } = null!;
+   public List<PartModel> Parts { get; set; } = null!;
+   public List<InvoiceModel> Invoices { get; set; } = null!;
+   public List<BinModel> Bins { get; set; } = null!;
 }

@@ -1,4 +1,5 @@
-﻿using PartsHoleLib.Interfaces;
+﻿using PartsHoleLib;
+using PartsHoleLib.Interfaces;
 
 namespace PartsHoleAPI.Utils
 {
@@ -27,19 +28,19 @@ namespace PartsHoleAPI.Utils
       #region Methods
       public string? GetCollection<T>() where T : IModel
       {
-         if (typeof(T) == typeof(IBinModel))
+         if (typeof(T) == typeof(BinModel))
          {
             return BinsCollection;
          }
-         else if (typeof(T) == typeof(IInvoiceModel))
+         else if (typeof(T) == typeof(InvoiceModel))
          {
             return InvoicesCollection;
          }
-         else if (typeof(T) == typeof(IPartModel))
+         else if (typeof(T) == typeof(PartModel))
          {
             return PartsCollection;
          }
-         else if (typeof(T) == typeof(IUserModel))
+         else if (typeof(T) == typeof(UserModel))
          {
             return UsersCollection;
          }

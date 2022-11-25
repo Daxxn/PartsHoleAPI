@@ -10,15 +10,15 @@ namespace PartsHoleAPI.Controllers;
 [ApiController]
 public class TestingController : ControllerBase
 {
-   private readonly ICollectionService<IPartModel> _partsCollection;
-   public TestingController(ICollectionService<IPartModel> partsCollection)
+   private readonly ICollectionService<PartModel> _partsCollection;
+   public TestingController(ICollectionService<PartModel> partsCollection)
    {
       _partsCollection = partsCollection;
    }
 
    // GET: api/<TestingController>
    [HttpGet]
-   public async Task<ActionResult<IPartModel?>> Get()
+   public async Task<ActionResult<PartModel?>> Get()
    {
       var part = await _partsCollection.GetFromDatabaseAsync("6360180d1a792e2787223cff");
 
@@ -27,7 +27,7 @@ public class TestingController : ControllerBase
 
    // GET api/<TestingController>/6360180d1a792e2787223cff
    [HttpGet("{id:length(24)}")]
-   public async Task<ActionResult<IPartModel?>> Get(string id)
+   public async Task<ActionResult<PartModel?>> Get(string id)
    {
       if (string.IsNullOrEmpty(id))
       {

@@ -1,18 +1,16 @@
 using CSVParserLibrary;
 
-using MongoDB.Bson.Serialization;
-using MongoDB.Bson.Serialization.Serializers;
+//using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 using PartsHoleAPI.DBServices;
 using PartsHoleAPI.DBServices.Interfaces;
 using PartsHoleAPI.Utils;
 
 using PartsHoleLib;
-using PartsHoleLib.Interfaces;
 
 namespace PartsHoleAPI
 {
-    public class Program
+   public class Program
    {
       public static void Main(string[] args)
       {
@@ -56,36 +54,6 @@ namespace PartsHoleAPI
 
          builder.Services.AddRouting((options) => options.LowercaseUrls = true);
 
-         #region Configure MongoDB Serializers
-         BsonSerializer.RegisterSerializer(
-            new ImpliedImplementationInterfaceSerializer<IUserModel, UserModel>(
-               BsonSerializer.LookupSerializer<UserModel>()));
-         BsonSerializer.RegisterSerializer(
-            new ImpliedImplementationInterfaceSerializer<IPartModel, PartModel>(
-               BsonSerializer.LookupSerializer<PartModel>()));
-         BsonSerializer.RegisterSerializer(
-            new ImpliedImplementationInterfaceSerializer<IBinModel, BinModel>(
-               BsonSerializer.LookupSerializer<BinModel>()));
-         BsonSerializer.RegisterSerializer(
-            new ImpliedImplementationInterfaceSerializer<IInvoiceModel, InvoiceModel>(
-               BsonSerializer.LookupSerializer<InvoiceModel>()));
-         BsonSerializer.RegisterSerializer(
-            new ImpliedImplementationInterfaceSerializer<IUserData, UserData>(
-               BsonSerializer.LookupSerializer<UserData>()));
-         BsonSerializer.RegisterSerializer(
-            new ImpliedImplementationInterfaceSerializer<IPartNumber, PartNumber>(
-               BsonSerializer.LookupSerializer<PartNumber>()));
-         #endregion
-
-         #region Register models
-         builder.Services.AddScoped<IUserModel, UserModel>();
-         builder.Services.AddScoped<IUserData, UserData>();
-         builder.Services.AddScoped<IPartModel, PartModel>();
-         builder.Services.AddScoped<IBinModel, BinModel>();
-         builder.Services.AddScoped<IInvoiceModel, InvoiceModel>();
-         builder.Services.AddScoped<IPartNumber, PartNumber>();
-         #endregion
-
          #region Register Transient Models
          builder.Services.AddTransient<ICSVParserOptions, CSVParserOptions>();
          builder.Services.AddAbstractFactory<ICSVParser, CSVParser>();
@@ -93,8 +61,8 @@ namespace PartsHoleAPI
 
          #region Register endpoint Services
          builder.Services.AddSingleton<IUserService, UserService>();
-         builder.Services.AddSingleton<ICollectionService<IPartModel>, CollectionService<IPartModel>>();
-         builder.Services.AddSingleton<ICollectionService<IBinModel>, CollectionService<IBinModel>>();
+         builder.Services.AddSingleton<ICollectionService<PartModel>, CollectionService<PartModel>>();
+         builder.Services.AddSingleton<ICollectionService<BinModel>, CollectionService<BinModel>>();
          builder.Services.AddSingleton<IInvoiceService, InvoiceService>();
          builder.Services.AddSingleton<IPartNumberService, PartNumberService>();
          #endregion

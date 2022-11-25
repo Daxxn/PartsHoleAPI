@@ -3,10 +3,11 @@ using PartsHoleLib.Interfaces;
 
 namespace PartsHoleLib;
 
-public class PartNumber : IComparable<PartNumber>, IPartNumber
+public class PartNumber : IComparable<PartNumber>, IModel
 {
-    #region Local Props
-    public static Dictionary<PartNumberType, PartNumberSubTypes[]> SubTypeDisplay = new()
+   #region Local Props
+   public string _id { get; set; } = null!;
+   public static Dictionary<PartNumberType, PartNumberSubTypes[]> SubTypeDisplay = new()
    {
       { PartNumberType.Passives, new PartNumberSubTypes[] { PartNumberSubTypes.Resistor, PartNumberSubTypes.capacitor, PartNumberSubTypes.Inductor, PartNumberSubTypes.Ferrites, PartNumberSubTypes.Crystal, PartNumberSubTypes.Resonator } },
       { PartNumberType.Protection, new PartNumberSubTypes[] { PartNumberSubTypes.Fuse, PartNumberSubTypes.CircuitBreaker, PartNumberSubTypes.Varistor, PartNumberSubTypes.PTCFuse } },

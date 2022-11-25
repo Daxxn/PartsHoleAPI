@@ -1,11 +1,9 @@
-﻿using CSVParserLibrary;
-
-using PartsHoleLib.Interfaces;
+﻿using PartsHoleLib;
 
 namespace PartsHoleAPI.DBServices.Interfaces;
 
-public interface IInvoiceService : ICollectionService<IInvoiceModel>
+public interface IInvoiceService : ICollectionService<InvoiceModel>
 {
-    Task<IInvoiceModel> ParseInvoiceFileAsync(IFormFile file);
-    Task<IEnumerable<IInvoiceModel>> ParseInvoiceFilesAsync(IEnumerable<IFormFile> files);
+    Task<InvoiceModel> ParseInvoiceFileAsync(IFormFile file);
+    Task<IEnumerable<InvoiceModel>> ParseInvoiceFilesAsync(IEnumerable<IFormFile> files);
 }

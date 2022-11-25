@@ -15,11 +15,11 @@ public class PartNumController : ControllerBase
 {
    #region Props
    private readonly IUserService _userService;
-   private readonly ICollectionService<IPartModel> _partsService;
+   private readonly ICollectionService<PartModel> _partsService;
    #endregion
    public PartNumController(
       IUserService userService,
-      ICollectionService<IPartModel> partsService
+      ICollectionService<PartModel> partsService
       )
    {
       _userService = userService;
