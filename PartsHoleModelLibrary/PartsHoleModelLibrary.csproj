@@ -7,11 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="CSVParserLibrary" Version="1.0.0" />
     <PackageReference Include="MongoDB.Driver" Version="2.18.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\..\..\Libraries\CSVParserLibrary\CSVParserLibrary\CSVParserLibrary.csproj" />
   </ItemGroup>
 
 </Project>
