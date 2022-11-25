@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+
+using MongoDB.Bson;
 using PartsHoleAPI.DBServices.Interfaces;
+
 using PartsHoleLib;
-using PartsHoleLib.Interfaces;
 
 using PartsHoleRestLibrary.Exceptions;
 using PartsHoleRestLibrary.Requests;
@@ -14,50 +16,42 @@ namespace PartsHoleAPI.Controllers;
 public class PartNumController : ControllerBase
 {
    #region Props
-   private readonly IUserService _userService;
-   private readonly ICollectionService<PartModel> _partsService;
+   private readonly ILogger<PartNumController> _logger;
+   private readonly IPartNumberService _partNumberService;
    #endregion
    public PartNumController(
-      IUserService userService,
-      ICollectionService<PartModel> partsService
+      IPartNumberService partNumberService,
+      ILogger<PartNumController> logger
       )
    {
-      _userService = userService;
-      _partsService = partsService;
+      _logger = logger;
+      _partNumberService = partNumberService;
    }
 
    /// <summary>
-   /// !!NOT FINISHED!!
-   /// Generate New part number based on the provided.
+   /// Get a <see cref="PartNumber"/> from the database.
+   /// <list type="table">
+   ///   <item>
+   ///      <term>GET</term>
+   ///      <description>api/partnums/{<paramref name="id"/>}</description>
+   ///   </item>
+   /// </list>
    /// </summary>
-   /// <param name="requestData">Type and SubType request data.</param>
-   [HttpPost]
-   public async Task<APIResponse<string>?> PostGeneratePartNumber([FromBody] PartNumberRequestModel requestData)
+   /// <param name="id"><see cref="ObjectId"/> to find.</param>
+   /// <returns>The <see cref="PartNumber"/> if found. Otherwise <see langword="null"/>.</returns>
+   [HttpGet("{id:length(24)}")]
+   public async Task<APIResponse<PartNumber?>> Get(string id)
    {
       try
       {
-         if (string.IsNullOrEmpty(requestData.UserId))
-            return new APIResponse<string>("POST", "User ID not provided.");
-         if (requestData.Type is null)
-            return new APIResponse<string>("POST", "Part number type not provided.");
-         if (requestData.SubType is null)
-            return new APIResponse<string>("POST", "Part number sub-type not provided.");
-         var foundUser = await _userService.GetFromDatabaseAsync(requestData.UserId);
-         if (foundUser == null)
-            throw new ModelNotFoundException("UserModel", "User not found.");
-         var allParts = await _partsService.GetFromDatabaseAsync(foundUser.Parts.ToArray());
-         if (allParts is null)
-            throw new ModelNotFoundException("PartModel[]", "Part models not found.");
-         var allPartNumbers = new PartNumberCollection(allParts.Select(x => PartNumber.Parse(x.PartNumber)));
-         if (!allPartNumbers.Any())
-            return new APIResponse<string>("POST", "No part numbers found.");
-
-         allPartNumbers.ToList().Sort();
-         throw new NotImplementedException();
-      }
-      catch (ModelNotFoundException e)
-      {
-         return new APIResponse<string>("POST", e.Message);
+         var foundPN = await _partNumberService.GetFromDatabaseAsync(id);
+         if (foundPN is null)
+         {
+            _logger.LogInformation("Part Number not found.");
+            return new(null, "GET", "Part Number not found.");
+         }
+         _logger.LogInformation($"PartNumber - GET - {id}", id);
+         return new(foundPN, "GET");
       }
       catch (Exception)
       {
@@ -65,15 +59,97 @@ public class PartNumController : ControllerBase
       }
    }
 
-   // PUT api/<PartNumController>/5
-   [HttpPut("{id}")]
-   public void Put(int id, [FromBody] string value)
+   /// <summary>
+   /// Generate New part number based on the provided.
+   /// <list type="table">
+   ///   <item>
+   ///      <term>POST</term>
+   ///      <description>api/partnums/gen</description>
+   ///   </item>
+   ///   <item>
+   ///      <term>BODY</term>
+   ///      <description><see cref="PartNumberRequestModel"/> <paramref name="requestData"/></description>
+   ///   </item>
+   /// </list>
+   /// </summary>
+   /// <param name="requestData">Type and SubType request data.</param>
+   [HttpPost("gen")]
+   public async Task<APIResponse<PartNumber?>> PostGeneratePartNumber([FromBody] PartNumberRequestModel requestData)
    {
+      try
+      {
+         if (string.IsNullOrEmpty(requestData.UserId))
+            return new APIResponse<PartNumber?>("POST", "User ID not provided.");
+         if (requestData.Category is null)
+            return new APIResponse<PartNumber?>("POST", "Part number category not provided.");
+         if (requestData.SubCategory is null)
+            return new APIResponse<PartNumber?>("POST", "Part number sub-category not provided.");
+         var newPartNumber = await _partNumberService.GeneratePartNumberAsync(requestData);
+         return newPartNumber is null
+            ? throw new ModelNotFoundException("PartNumber", "Part number not created.")
+            : new APIResponse<PartNumber?>(newPartNumber, "POST");
+      }
+      catch (ModelNotFoundException e)
+      {
+         return new APIResponse<PartNumber?>("POST", e.Message);
+      }
+      catch (Exception)
+      {
+         throw;
+      }
    }
 
-   // DELETE api/<PartNumController>/5
-   [HttpDelete("{id}")]
-   public void Delete(int id)
+   /// <summary>
+   /// Update a part number in the database.
+   /// <list type="table">
+   ///   <item>
+   ///      <term>PUT</term>
+   ///      <description>api/partnums/{<paramref name="id"/>}</description>
+   ///   </item>
+   ///   <item>
+   ///      <term>BODY</term>
+   ///      <description><see cref="PartNumberRequestModel"/> <paramref name="updatedPartNumber"/></description>
+   ///   </item>
+   /// </list>
+   /// </summary>
+   /// <param name="id"><see cref="ObjectId"/> of the part to update.</param>
+   /// <param name="updatedPartNumber">Updated <see cref="PartNumber"/>.</param>
+   [HttpPut("{id:length(24)}")]
+   public async Task<APIResponse<bool>> Put(string id, [FromBody] PartNumber updatedPartNumber)
    {
+      try
+      {
+         if (updatedPartNumber is null)
+            return new APIResponse<bool>(false, "PUT", "Part Number is null.");
+
+         return new(await _partNumberService.UpdateDatabaseAsync(id, updatedPartNumber), "PUT");
+      }
+      catch (Exception)
+      {
+         throw;
+      }
+   }
+
+   /// <summary>
+   /// Delete a part from the database.
+   /// <list type="table">
+   ///   <item>
+   ///      <term>DELETE</term>
+   ///      <description>api/partnums/{<paramref name="id"/>}</description>
+   ///   </item>
+   /// </list>
+   /// </summary>
+   /// <param name="id"><see cref="ObjectId"/> of the <see cref="PartNumber"/> to delete.</param>
+   [HttpDelete("{id:length(24)}")]
+   public async Task<APIResponse<bool>> Delete(string id)
+   {
+      try
+      {
+         return new(await _partNumberService.DeleteFromDatabaseAsync(id), "DELETE");
+      }
+      catch (Exception)
+      {
+         throw;
+      }
    }
 }

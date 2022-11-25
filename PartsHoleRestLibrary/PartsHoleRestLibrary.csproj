@@ -6,4 +6,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\PartsHoleModelLibrary\PartsHoleModelLibrary.csproj" />
+  </ItemGroup>
+
 </Project>

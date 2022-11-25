@@ -44,6 +44,10 @@ namespace PartsHoleAPI.Utils
          {
             return UsersCollection;
          }
+         else if (typeof(T) == typeof(PartNumber))
+         {
+            return PartNumberCollection;
+         }
          return null!;
       }
       #endregion

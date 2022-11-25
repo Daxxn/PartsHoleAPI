@@ -1,4 +1,7 @@
-﻿using PartsHoleLib.Enums;
+﻿using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
+
+using PartsHoleLib.Enums;
 using PartsHoleLib.Interfaces;
 
 namespace PartsHoleLib;
@@ -6,7 +9,9 @@ namespace PartsHoleLib;
 public class PartNumber : IComparable<PartNumber>, IModel
 {
    #region Local Props
-   public string _id { get; set; } = null!;
+   [BsonId]
+   [BsonRepresentation(BsonType.ObjectId)]
+   public string _id { get; set; } = ObjectId.GenerateNewId().ToString();
    public static Dictionary<PartNumberType, PartNumberSubTypes[]> SubTypeDisplay = new()
    {
       { PartNumberType.Passives, new PartNumberSubTypes[] { PartNumberSubTypes.Resistor, PartNumberSubTypes.capacitor, PartNumberSubTypes.Inductor, PartNumberSubTypes.Ferrites, PartNumberSubTypes.Crystal, PartNumberSubTypes.Resonator } },
@@ -21,77 +26,77 @@ public class PartNumber : IComparable<PartNumber>, IModel
       { PartNumberType.ElectroMechanical, new PartNumberSubTypes[] { PartNumberSubTypes.Relay, PartNumberSubTypes.Contactor, PartNumberSubTypes.Mic, PartNumberSubTypes.Speaker, PartNumberSubTypes.Buzzer, PartNumberSubTypes.Motor } },
       { PartNumberType.Switch_Input, new PartNumberSubTypes[] { PartNumberSubTypes.Tactile, PartNumberSubTypes.Toggle, PartNumberSubTypes.DIP, PartNumberSubTypes.Limit, PartNumberSubTypes.Rotary, PartNumberSubTypes.Slide, PartNumberSubTypes.Rocker, PartNumberSubTypes.RotaryEncoder, PartNumberSubTypes.Potentiometer, PartNumberSubTypes.Keypad, PartNumberSubTypes.Keylock, PartNumberSubTypes.Navigation } }
    };
-    public uint Category { get; set; }
-    public uint SubCategory { get; set; }
-    public uint ID { get; set; }
-    #endregion
+   public uint Category { get; set; }
+   public uint SubCategory { get; set; }
+   public uint ID { get; set; }
+   #endregion
 
-    #region Constructors
-    public PartNumber() { }
-    public PartNumber(uint category, uint subCategory)
-    {
-        Category = category;
-        SubCategory = subCategory;
-    }
-    public PartNumber(uint category, uint subCategory, uint id)
-    {
-        Category = category;
-        SubCategory = subCategory;
-        ID = id;
-    }
-    #endregion
+   #region Constructors
+   public PartNumber() { }
+   public PartNumber(uint category, uint subCategory)
+   {
+      Category = category;
+      SubCategory = subCategory;
+   }
+   public PartNumber(uint category, uint subCategory, uint id)
+   {
+      Category = category;
+      SubCategory = subCategory;
+      ID = id;
+   }
+   #endregion
 
-    #region Methods
-    public static PartNumber? Parse(string input)
-    {
-        if (string.IsNullOrEmpty(input))
-            return null;
+   #region Methods
+   public static PartNumber? Parse(string input)
+   {
+      if (string.IsNullOrEmpty(input))
+         return null;
 
-        PartNumber newModel = new();
+      PartNumber newModel = new();
 
-        var spl = input.Split('-');
+      var spl = input.Split('-');
 
-        if (spl.Length == 2)
-        {
-            if (uint.TryParse(spl[0][..1], out uint categoryNum))
-            {
-                newModel.Category = categoryNum;
-            }
-            if (uint.TryParse(spl[0][2..3], out uint subCategoryNum))
-            {
-                newModel.SubCategory = subCategoryNum;
-            }
-            if (uint.TryParse(spl[1], out uint id))
-            {
-                newModel.ID = id;
-            }
-        }
-        return newModel;
-    }
+      if (spl.Length == 2)
+      {
+         if (uint.TryParse(spl[0][..1], out uint categoryNum))
+         {
+            newModel.Category = categoryNum;
+         }
+         if (uint.TryParse(spl[0][2..3], out uint subCategoryNum))
+         {
+            newModel.SubCategory = subCategoryNum;
+         }
+         if (uint.TryParse(spl[1], out uint id))
+         {
+            newModel.ID = id;
+         }
+      }
+      return newModel;
+   }
 
-    public int CompareTo(PartNumber? other)
-    {
-        if (other is null)
-            return -1;
-        var value = other.CalcValue() - CalcValue();
-        return value > 0 ? -1 : value == 0 ? 0 : 1;
-    }
+   public int CompareTo(PartNumber? other)
+   {
+      if (other is null)
+         return -1;
+      var value = other.CalcValue() - CalcValue();
+      return value > 0 ? -1 : value == 0 ? 0 : 1;
+   }
 
-    public override bool Equals(object? obj)
-    {
-        if (obj is PartNumber pn)
-            return Equals(pn);
-        return base.Equals(obj);
-    }
-    public bool Equals(PartNumber? other) => other != null && CalcValue() == other.CalcValue();
+   public override bool Equals(object? obj)
+   {
+      if (obj is PartNumber pn)
+         return Equals(pn);
+      return base.Equals(obj);
+   }
+   public bool Equals(PartNumber? other) => other != null && CalcValue() == other.CalcValue();
 
-    public override int GetHashCode() => base.GetHashCode();
+   public override int GetHashCode() => base.GetHashCode();
 
-    private double CalcValue() => (Category * Math.Pow(10, 6)) + (SubCategory * Math.Pow(10, 4)) + ID;
-    public override string ToString() => $"{Category:D2}{SubCategory:D2}-{ID:D4}";
-    #endregion
+   private double CalcValue() => (Category * Math.Pow(10, 6)) + (SubCategory * Math.Pow(10, 4)) + ID;
+   public override string ToString() => $"{Category:D2}{SubCategory:D2}-{ID:D4}";
+   #endregion
 
-    #region Full Props
-    public uint FullCategory => (uint)(Category * Math.Pow(10, 2)) + SubCategory;
-    #endregion
+   #region Full Props
+   public uint FullCategory => (uint)(Category * Math.Pow(10, 2)) + SubCategory;
+   #endregion
 }

@@ -3,8 +3,9 @@
 public enum ModelIDSelector
 {
    PARTS = 0,
-   INVOICE = 1,
+   INVOICES = 1,
    BINS = 2,
+   PARTNUMBERS = 3,
    NONE = -1,
 }
 

@@ -2,13 +2,14 @@
 
 using MongoDB.Bson;
 using MongoDB.Driver;
+
 using PartsHoleAPI.DBServices.Interfaces;
 using PartsHoleAPI.Utils;
 
 using PartsHoleLib;
+using PartsHoleLib.Enums;
 using PartsHoleLib.Interfaces;
 
-using PartsHoleRestLibrary.Enums;
 using PartsHoleRestLibrary.Exceptions;
 
 namespace PartsHoleAPI.DBServices;
@@ -20,6 +21,7 @@ public class UserService : IUserService
    private IMongoCollection<PartModel> PartsCollection { get; init; }
    private IMongoCollection<InvoiceModel> InvoicesCollection { get; init; }
    private IMongoCollection<BinModel> BinCollection { get; set; }
+   private IMongoCollection<PartNumber> PartNumberCollection { get; set; }
    #endregion
 
    #region Constructors
@@ -31,6 +33,7 @@ public class UserService : IUserService
       PartsCollection = db.GetCollection<PartModel>(settings.Value.PartsCollection);
       InvoicesCollection = db.GetCollection<InvoiceModel>(settings.Value.InvoicesCollection);
       BinCollection = db.GetCollection<BinModel>(settings.Value.BinsCollection);
+      PartNumberCollection = db.GetCollection<PartNumber>(settings.Value.PartNumberCollection);
    }
    #endregion
 
@@ -70,6 +73,14 @@ public class UserService : IUserService
          if (binResult != null)
          {
             data.Bins = await binResult.ToListAsync();
+         }
+      }
+      if (user.PartNumbers.Count > 0)
+      {
+         var partNumbers = await PartNumberCollection.FindAsync(x => user.PartNumbers.Contains(x._id));
+         if (partNumbers != null)
+         {
+            data.PartNumbers = await partNumbers.ToListAsync();
          }
       }
 
@@ -124,9 +135,9 @@ public class UserService : IUserService
                }
                return false;
             case ModelIDSelector.INVOICES:
-               if (foundUser.Parts.Remove(modelId))
+               if (foundUser.Invoices.Remove(modelId))
                {
-                  var update = Builders<UserModel>.Update.Set((user) => user.Parts, foundUser.Parts);
+                  var update = Builders<UserModel>.Update.Set((user) => user.Invoices, foundUser.Invoices);
                   var result = await UserCollection.UpdateOneAsync(user => user._id == userId, update);
                   if (result.IsAcknowledged)
                   {
@@ -135,9 +146,20 @@ public class UserService : IUserService
                }
                return false;
             case ModelIDSelector.BINS:
-               if (foundUser.Parts.Remove(modelId))
+               if (foundUser.Bins.Remove(modelId))
                {
-                  var update = Builders<UserModel>.Update.Set((user) => user.Parts, foundUser.Parts);
+                  var update = Builders<UserModel>.Update.Set((user) => user.Bins, foundUser.Bins);
+                  var result = await UserCollection.UpdateOneAsync(user => user._id == userId, update);
+                  if (result.IsAcknowledged)
+                  {
+                     return result.ModifiedCount > 0;
+                  }
+               }
+               return false;
+            case ModelIDSelector.PARTNUMBERS:
+               if (foundUser.PartNumbers.Remove(modelId))
+               {
+                  var update = Builders<UserModel>.Update.Set((user) => user.Parts, foundUser.PartNumbers);
                   var result = await UserCollection.UpdateOneAsync(user => user._id == userId, update);
                   if (result.IsAcknowledged)
                   {
@@ -180,6 +202,15 @@ public class UserService : IUserService
             case ModelIDSelector.BINS:
                foundUser.Bins.Add(modelId);
                update = Builders<UserModel>.Update.Set((user) => user.Bins, foundUser.Bins);
+               result = await UserCollection.UpdateOneAsync(user => user._id == userId, update);
+               if (result.IsAcknowledged)
+               {
+                  return result.ModifiedCount > 0;
+               }
+               return false;
+            case ModelIDSelector.PARTNUMBERS:
+               foundUser.PartNumbers.Add(modelId);
+               update = Builders<UserModel>.Update.Set((user) => user.PartNumbers, foundUser.PartNumbers);
                result = await UserCollection.UpdateOneAsync(user => user._id == userId, update);
                if (result.IsAcknowledged)
                {

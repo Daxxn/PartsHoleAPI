@@ -21,4 +21,6 @@ public class UserModel : IModel
    public List<string> Invoices { get; set; } = null!;
    [BsonRepresentation(BsonType.ObjectId)]
    public List<string> Bins { get; set; } = null!;
+   [BsonRepresentation(BsonType.ObjectId)]
+   public List<string> PartNumbers { get; set; } = null!;
 }

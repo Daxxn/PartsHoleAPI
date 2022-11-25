@@ -1,6 +1,6 @@
 using CSVParserLibrary;
 
-//using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 using PartsHoleAPI.DBServices;
 using PartsHoleAPI.DBServices.Interfaces;
@@ -10,7 +10,7 @@ using PartsHoleLib;
 
 namespace PartsHoleAPI
 {
-   public class Program
+    public class Program
    {
       public static void Main(string[] args)
       {
@@ -34,17 +34,7 @@ namespace PartsHoleAPI
          #endregion
 
          #region Add Auth0 Authentication to Services
-         //var auth0 = builder.Configuration.Get<Auth0Settings>();
-
-         //builder.Services.AddAuthentication(opt =>
-         //{
-         //   opt.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-         //   opt.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-         //}).AddJwtBearer(opt =>
-         //{
-         //   opt.Authority = builder.Configuration["Auth0:Authority"];
-         //   opt.Audience = builder.Configuration["Auth0:Audience"];
-         //});
+         //RegisterAuth0(builder);
          #endregion
 
          builder.Services.AddControllers();
@@ -54,18 +44,8 @@ namespace PartsHoleAPI
 
          builder.Services.AddRouting((options) => options.LowercaseUrls = true);
 
-         #region Register Transient Models
-         builder.Services.AddTransient<ICSVParserOptions, CSVParserOptions>();
-         builder.Services.AddAbstractFactory<ICSVParser, CSVParser>();
-         #endregion
-
-         #region Register endpoint Services
-         builder.Services.AddSingleton<IUserService, UserService>();
-         builder.Services.AddSingleton<ICollectionService<PartModel>, CollectionService<PartModel>>();
-         builder.Services.AddSingleton<ICollectionService<BinModel>, CollectionService<BinModel>>();
-         builder.Services.AddSingleton<IInvoiceService, InvoiceService>();
-         builder.Services.AddSingleton<IPartNumberService, PartNumberService>();
-         #endregion
+         RegisterModels(builder.Services);
+         RegisterCollectionServices(builder.Services);
 
          var app = builder.Build();
 
@@ -88,6 +68,36 @@ namespace PartsHoleAPI
          app.MapControllers();
          app.Run();
          #endregion
+      }
+
+      private static void RegisterModels(IServiceCollection Services)
+      {
+         Services.AddTransient<ICSVParserOptions, CSVParserOptions>();
+         Services.AddAbstractFactory<ICSVParser, CSVParser>();
+      }
+
+      private static void RegisterCollectionServices(IServiceCollection Services)
+      {
+         Services.AddSingleton<IUserService, UserService>();
+         Services.AddSingleton<ICollectionService<PartModel>, CollectionService<PartModel>>();
+         Services.AddSingleton<ICollectionService<BinModel>, CollectionService<BinModel>>();
+         Services.AddSingleton<IInvoiceService, InvoiceService>();
+         Services.AddSingleton<IPartNumberService, PartNumberService>();
+      }
+
+      private static void RegisterAuth0(WebApplicationBuilder builder)
+      {
+         var auth0 = builder.Configuration.Get<Auth0Settings>();
+
+         builder.Services.AddAuthentication(opt =>
+         {
+            opt.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+            opt.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+         }).AddJwtBearer(opt =>
+         {
+            opt.Authority = builder.Configuration["Auth0:Authority"];
+            opt.Audience = builder.Configuration["Auth0:Audience"];
+         });
       }
    }
 }
