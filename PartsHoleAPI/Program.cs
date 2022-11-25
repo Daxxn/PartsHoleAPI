@@ -8,96 +8,100 @@ using PartsHoleAPI.Utils;
 
 using PartsHoleLib;
 
-namespace PartsHoleAPI
+namespace PartsHoleAPI;
+
+public class Program
 {
-    public class Program
+   public static void Main(string[] args)
    {
-      public static void Main(string[] args)
+      var builder = WebApplication.CreateBuilder(args);
+
+      #region Add config variables to Services
+      builder.Services.Configure<DatabaseSettings>(
+         builder.Configuration.GetSection("Database"));
+      builder.Services.Configure<Auth0Settings>(
+         builder.Configuration.GetSection("Auth0"));
+      #endregion
+
+      #region Add Logging to Services
+      builder.Services.AddLogging((loggerConfig) =>
       {
-         var builder = WebApplication.CreateBuilder(args);
-
-         #region Add config variables to Services
-         builder.Services.Configure<DatabaseSettings>(
-            builder.Configuration.GetSection("Database"));
-         builder.Services.Configure<Auth0Settings>(
-            builder.Configuration.GetSection("Auth0"));
-         #endregion
-
-         #region Add Logging to Services
-         builder.Services.AddLogging((loggerConfig) =>
-         {
 #if DEBUG
-            loggerConfig.AddConsole();
-            loggerConfig.AddDebug();
+         loggerConfig.AddConsoleFormatter<CustomConsoleFormatter, CustomConsoleOptions>();
+         loggerConfig.AddConsole((opt) =>
+         {
+            opt.FormatterName = "Custom";
+         });
+         loggerConfig.AddDebug();
 #endif
-         });
-         #endregion
+      });
+      #endregion
 
-         #region Add Auth0 Authentication to Services
-         //RegisterAuth0(builder);
-         #endregion
+      #region Add Auth0 Authentication to Services
+      //RegisterAuth0(builder);
+      #endregion
 
-         builder.Services.AddControllers();
-         // OpenAPI : https://aka.ms/aspnetcore/swashbuckle
-         builder.Services.AddEndpointsApiExplorer();
-         builder.Services.AddSwaggerGen();
+      builder.Services.AddControllers();
+      // OpenAPI : https://aka.ms/aspnetcore/swashbuckle
+      builder.Services.AddEndpointsApiExplorer();
+      builder.Services.AddSwaggerGen();
 
-         builder.Services.AddRouting((options) => options.LowercaseUrls = true);
+      builder.Services.AddRouting((options) => options.LowercaseUrls = true);
 
-         RegisterModels(builder.Services);
-         RegisterCollectionServices(builder.Services);
+      RegisterModels(builder.Services);
+      RegisterCollectionServices(builder.Services);
 
-         var app = builder.Build();
+      var app = builder.Build();
 
-         #region Configure HTTP request pipeline.
-         if (app.Environment.IsDevelopment())
-         {
-            app.UseSwagger();
-            app.UseSwaggerUI();
-            app.UseCors((cors) =>
-            {
-               // Going to have to figure out What kind of CORS im gonna need.
-               cors.WithOrigins(
-                  "https://localhost:3000"
-               );
-            });
-         }
-
-         app.UseHttpsRedirection();
-         app.UseAuthorization();
-         app.MapControllers();
-         app.Run();
-         #endregion
-      }
-
-      private static void RegisterModels(IServiceCollection Services)
+      #region Configure HTTP request pipeline.
+      if (app.Environment.IsDevelopment())
       {
-         Services.AddTransient<ICSVParserOptions, CSVParserOptions>();
-         Services.AddAbstractFactory<ICSVParser, CSVParser>();
-      }
-
-      private static void RegisterCollectionServices(IServiceCollection Services)
-      {
-         Services.AddSingleton<IUserService, UserService>();
-         Services.AddSingleton<ICollectionService<PartModel>, CollectionService<PartModel>>();
-         Services.AddSingleton<ICollectionService<BinModel>, CollectionService<BinModel>>();
-         Services.AddSingleton<IInvoiceService, InvoiceService>();
-         Services.AddSingleton<IPartNumberService, PartNumberService>();
-      }
-
-      private static void RegisterAuth0(WebApplicationBuilder builder)
-      {
-         var auth0 = builder.Configuration.Get<Auth0Settings>();
-
-         builder.Services.AddAuthentication(opt =>
+         app.UseHttpLogging();
+         app.UseSwagger();
+         app.UseSwaggerUI();
+         app.UseCors((cors) =>
          {
-            opt.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-            opt.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-         }).AddJwtBearer(opt =>
-         {
-            opt.Authority = builder.Configuration["Auth0:Authority"];
-            opt.Audience = builder.Configuration["Auth0:Audience"];
+            // Going to have to figure out What kind of CORS im gonna need.
+            cors.WithOrigins(
+               "https://localhost:3000"
+            );
          });
       }
+
+      app.UseHttpsRedirection();
+      app.UseAuthorization();
+      app.MapControllers();
+      app.Run();
+      #endregion
+   }
+
+   private static void RegisterModels(IServiceCollection Services)
+   {
+      Services.AddTransient<ICSVParserOptions, CSVParserOptions>();
+      Services.AddAbstractFactory<ICSVParser, CSVParser>();
+   }
+
+   private static void RegisterCollectionServices(IServiceCollection Services)
+   {
+      Services.AddSingleton<IUserService, UserService>();
+      Services.AddSingleton<ICollectionService<PartModel>, CollectionService<PartModel>>();
+      Services.AddSingleton<ICollectionService<BinModel>, CollectionService<BinModel>>();
+      Services.AddSingleton<IInvoiceService, InvoiceService>();
+      Services.AddSingleton<IPartNumberService, PartNumberService>();
+   }
+
+   private static void RegisterAuth0(WebApplicationBuilder builder)
+   {
+      var auth0 = builder.Configuration.Get<Auth0Settings>();
+
+      builder.Services.AddAuthentication(opt =>
+      {
+         opt.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+         opt.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+      }).AddJwtBearer(opt =>
+      {
+         opt.Authority = builder.Configuration["Auth0:Authority"];
+         opt.Audience = builder.Configuration["Auth0:Audience"];
+      });
    }
 }

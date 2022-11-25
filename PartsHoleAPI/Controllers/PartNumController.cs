@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
 using MongoDB.Bson;
+
 using PartsHoleAPI.DBServices.Interfaces;
+using PartsHoleAPI.Utils;
 
 using PartsHoleLib;
 
@@ -40,22 +42,23 @@ public class PartNumController : ControllerBase
    /// <param name="id"><see cref="ObjectId"/> to find.</param>
    /// <returns>The <see cref="PartNumber"/> if found. Otherwise <see langword="null"/>.</returns>
    [HttpGet("{id:length(24)}")]
-   public async Task<APIResponse<PartNumber?>> Get(string id)
+   public async Task<APIResponse<PartNumber>> Get(string id)
    {
       try
       {
          var foundPN = await _partNumberService.GetFromDatabaseAsync(id);
          if (foundPN is null)
          {
-            _logger.LogInformation("Part Number not found.");
-            return new(null, "GET", "Part Number not found.");
+            _logger.ApiLogInfo("GET", "api/partnums", "Part Number not found.");
+            return new("GET", "Part Number not found.");
          }
-         _logger.LogInformation($"PartNumber - GET - {id}", id);
+         _logger.ApiLogDebug("GET", "api/partnums", $"Success : {id}");
          return new(foundPN, "GET");
       }
-      catch (Exception)
+      catch (Exception e)
       {
-         throw;
+         _logger.ApiLogError("GET", "api/partnums", "Error", e);
+         return new("GET", e.Message);
       }
    }
 
@@ -74,28 +77,39 @@ public class PartNumController : ControllerBase
    /// </summary>
    /// <param name="requestData">Type and SubType request data.</param>
    [HttpPost("gen")]
-   public async Task<APIResponse<PartNumber?>> PostGeneratePartNumber([FromBody] PartNumberRequestModel requestData)
+   public async Task<APIResponse<PartNumber>> PostGeneratePartNumber([FromBody] PartNumberRequestModel requestData)
    {
       try
       {
          if (string.IsNullOrEmpty(requestData.UserId))
-            return new APIResponse<PartNumber?>("POST", "User ID not provided.");
+         {
+            _logger.ApiLogInfo("POST", "api/partnums/gen", "User ID not provided.");
+            return new APIResponse<PartNumber>("POST", "User ID not provided.");
+         }
          if (requestData.Category is null)
-            return new APIResponse<PartNumber?>("POST", "Part number category not provided.");
+         {
+            _logger.ApiLogInfo("POST", "api/partnums/gen", "Part number category not provided.");
+            return new APIResponse<PartNumber>("POST", "Part number category not provided.");
+         }
          if (requestData.SubCategory is null)
-            return new APIResponse<PartNumber?>("POST", "Part number sub-category not provided.");
+         {
+            _logger.ApiLogInfo("POST", "api/partnums/gen", "Part number sub-category not provided.");
+            return new APIResponse<PartNumber>("POST", "Part number sub-category not provided.");
+         }
          var newPartNumber = await _partNumberService.GeneratePartNumberAsync(requestData);
          return newPartNumber is null
             ? throw new ModelNotFoundException("PartNumber", "Part number not created.")
-            : new APIResponse<PartNumber?>(newPartNumber, "POST");
+            : new APIResponse<PartNumber>(newPartNumber, "POST");
       }
       catch (ModelNotFoundException e)
       {
-         return new APIResponse<PartNumber?>("POST", e.Message);
+         _logger.ApiLogError("POST", "api/partnums/gen", e.Message, e);
+         return new APIResponse<PartNumber>("POST", e.Message);
       }
-      catch (Exception)
+      catch (Exception e)
       {
-         throw;
+         _logger.ApiLogError("POST", "api/partnums/gen", e.Message, e);
+         return new APIResponse<PartNumber>("POST", e.Message);
       }
    }
 
@@ -120,13 +134,17 @@ public class PartNumController : ControllerBase
       try
       {
          if (updatedPartNumber is null)
+         {
+            _logger.ApiLogInfo("PUT", "api/partnums/{id}", "Part Number is null.");
             return new APIResponse<bool>(false, "PUT", "Part Number is null.");
+         }
 
          return new(await _partNumberService.UpdateDatabaseAsync(id, updatedPartNumber), "PUT");
       }
-      catch (Exception)
+      catch (Exception e)
       {
-         throw;
+         _logger.ApiLogError("PUT", "api/partnums/{id}", e.Message, e);
+         return new APIResponse<bool>("PUT", e.Message);
       }
    }
 
@@ -147,9 +165,10 @@ public class PartNumController : ControllerBase
       {
          return new(await _partNumberService.DeleteFromDatabaseAsync(id), "DELETE");
       }
-      catch (Exception)
+      catch (Exception e)
       {
-         throw;
+         _logger.ApiLogError("DELETE", "api/partnums/{id}", e.Message, e);
+         return new("DELETE", e.Message);
       }
    }
 }

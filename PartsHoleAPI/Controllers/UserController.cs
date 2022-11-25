@@ -3,6 +3,7 @@
 using MongoDB.Bson;
 
 using PartsHoleAPI.DBServices.Interfaces;
+using PartsHoleAPI.Utils;
 
 using PartsHoleLib;
 using PartsHoleLib.Enums;
@@ -87,12 +88,12 @@ public class UserController : ControllerBase
    {
       if (user is null)
       {
-         _logger.LogWarning("Unable to construct user model from body.");
+         _logger.ApiLogWarn("POST", "api/user/data", "Unable to construct user model from body.");
          return BadRequest(new APIResponse<UserData?>("POST", "No user data found in body."));
       }
       if (user.Parts is null && user.Invoices is null)
       {
-         _logger.LogWarning("No parts or invoice data found.");
+         _logger.ApiLogWarn("POST", "api/user/data", "No parts or invoice data found.");
          return BadRequest(new APIResponse<UserData?>("POST", "User has no data."));
       }
       var response = await _userService.GetUserDataFromDatabaseAsync(user);
@@ -121,12 +122,12 @@ public class UserController : ControllerBase
    {
       if (newUser is null)
       {
-         _logger.LogWarning("Unable to construct user model from body.");
+         _logger.ApiLogWarn("POST", "api/user", "Unable to construct user model from body.");
          return BadRequest(new APIResponse<bool>(false, "POST", "Unable to construct user model from body."));
       }
       if (string.IsNullOrEmpty(newUser._id))
       {
-         _logger.LogWarning("User model has no valid ID.");
+         _logger.ApiLogWarn("POST", "api/user", "User model has no valid ID.");
          return BadRequest(new APIResponse<bool>(false, "POST", "User model has no valid ID."));
       }
       return Ok(new APIResponse<bool>(await _userService.AddToDatabaseAsync(newUser), "POST"));
@@ -153,25 +154,38 @@ public class UserController : ControllerBase
       try
       {
          if (string.IsNullOrEmpty(requestData.UserId))
+         {
+            _logger.ApiLogInfo("POST", "api/user/add-model", "User ID was not provided.");
             return BadRequest(new APIResponse<bool>(false, "POST", "User ID was not provided."));
+         }
          if (string.IsNullOrEmpty(requestData.ModelId))
+         {
+            _logger.ApiLogInfo("POST", "api/user/add-model", "Model ID was not provided.");
             return BadRequest(new APIResponse<bool>(false, "POST", "Model ID was not provided."));
+         }
          var modelId = (ModelIDSelector?)requestData.PropId ?? ModelIDSelector.NONE;
          if (modelId == ModelIDSelector.NONE)
+         {
+            _logger.ApiLogWarn("POST", "api/user/add-model", "Property type does not match.");
             return BadRequest(new APIResponse<bool>(false, "POST", "Property type does not match."));
+         }
          var result = await _userService.AppendModelToUserAsync(requestData.UserId, requestData.ModelId, modelId);
          if (result)
          {
+            _logger.ApiLogInfo("POST", "api/user/add-model", "Success");
             return Ok(new APIResponse<bool>(true, "POST"));
          }
+         _logger.ApiLogWarn("POST", "api/user/add-model", "Failed to remove model.");
          return BadRequest(new APIResponse<bool>(false, "POST", "Failed to remove model."));
       }
       catch (ModelNotFoundException e)
       {
+         _logger.ApiLogWarn("POST", "api/user/add-model", $"Unable to find {e.ModelName}");
          return NotFound(new APIResponse<bool>(false, "POST", $"Unable to find {e.ModelName}"));
       }
-      catch (Exception)
+      catch (Exception e)
       {
+         _logger.ApiLogError("POST", "api/user/add-model", "Internal Error", e);
          throw;
       }
    }
@@ -192,10 +206,30 @@ public class UserController : ControllerBase
    /// <param name="updatedUser">Udated <see cref="UserModel"/>.</param>
    /// <returns>True if successful, otherwise False.</returns>
    [HttpPut]
-   public async Task<ActionResult<APIResponse<bool>>> Put([FromBody] UserModel updatedUser) =>
-      updatedUser is null
-         ? BadRequest(new APIResponse<bool>(false, "PUT", "Unable to find user."))
-         : Ok(new APIResponse<bool>(await _userService.UpdateDatabaseAsync(updatedUser._id, updatedUser), "PUT"));
+   public async Task<ActionResult<APIResponse<bool>>> Put([FromBody] UserModel updatedUser)
+   {
+      if (updatedUser == null)
+      {
+         _logger.ApiLogWarn("PUT", "api/user", "Unable to find user.");
+         return BadRequest(new APIResponse<bool>(false, "PUT", "Unable to find user."));
+      }
+
+      try
+      {
+         if (await _userService.UpdateDatabaseAsync(updatedUser._id, updatedUser))
+         {
+            _logger.ApiLogInfo("PUT", "api/user", $"Successfully updated user {updatedUser._id}");
+            return Ok(new APIResponse<bool>(true, "PUT"));
+         }
+         _logger.ApiLogWarn("PUT", "api/user", $"Unable to update user {updatedUser._id}");
+         return BadRequest(new APIResponse<bool>(false, "PUT"));
+      }
+      catch (Exception e)
+      {
+         _logger.ApiLogError("PUT", "api/user", "Internal Error", e);
+         throw;
+      }
+   }
 
    /// <summary>
    /// Deletes an <see cref="UserModel"/> based on the <see cref="ObjectId"/>.
@@ -209,12 +243,29 @@ public class UserController : ControllerBase
    /// <param name="id"><see cref="ObjectId"/> of the <see cref="UserModel"/> to delete.</param>
    /// <returns>True if successful, otherwise False.</returns>
    [HttpDelete("{id:length(24)}")]
-   public async Task<ActionResult<APIResponse<bool>>> Delete(string id) =>
-      string.IsNullOrEmpty(id)
-         ? BadRequest(new APIResponse<bool>(false, "DELETE", "Unable to find user ID."))
-         : await _userService.DeleteFromDatabaseAsync(id)
-            ? Ok(new APIResponse<bool>(true, "DELETE", $"User {id} Deleted."))
-            : BadRequest(new APIResponse<bool>(false, "DELETE", "Unable to delete user."));
+   public async Task<ActionResult<APIResponse<bool>>> Delete(string id)
+   {
+      try
+      {
+         if (string.IsNullOrEmpty(id))
+         {
+            _logger.ApiLogWarn("DELETE", "api/user/{id}", "Provided id was null.");
+            return BadRequest(new APIResponse<bool>(false, "DELETE", "Unable to find user ID."));
+         }
+         if (await _userService.DeleteFromDatabaseAsync(id))
+         {
+            _logger.ApiLogInfo("DELETE", "api/user/{id}", $"Sucessfully deleted user {id}");
+            return Ok(new APIResponse<bool>(true, "DELETE", $"User {id} Deleted."));
+         }
+         _logger.ApiLogWarn("DELETE", "api/user/{id}", $"Unable to deleted user {id}");
+         return BadRequest(new APIResponse<bool>(false, "DELETE", "Unable to delete user."));
+      }
+      catch (Exception e)
+      {
+         _logger.ApiLogError("DELETE", "api/user/{id}", "Internal Error", e);
+         throw;
+      }
+   }
 
    /// <summary>
    /// Removes a model <see cref="ObjectId"/> from the <see cref="UserModel"/>.
@@ -234,19 +285,38 @@ public class UserController : ControllerBase
    [HttpDelete("remove-model")]
    public async Task<ActionResult<APIResponse<bool>>> DeleteRemoveModel([FromBody] RequestUpdateListModel requestData)
    {
-      if (string.IsNullOrEmpty(requestData.UserId))
-         return BadRequest(new APIResponse<bool>(false, "DELETE", "User ID was not provided."));
-      if (string.IsNullOrEmpty(requestData.ModelId))
-         return BadRequest(new APIResponse<bool>(false, "DELETE", "Model ID was not provided."));
-      var modelId = (ModelIDSelector?)requestData.PropId ?? ModelIDSelector.NONE;
-      if (modelId == ModelIDSelector.NONE)
-         return BadRequest(new APIResponse<bool>(false, "DELETE", "Property type does not match."));
-      var result = await _userService.RemoveModelFromUserAsync(requestData.UserId, requestData.ModelId, modelId);
-      if (result)
+      try
       {
-         return Ok(new APIResponse<bool>(true, "DELETE"));
+         if (string.IsNullOrEmpty(requestData.UserId))
+         {
+            _logger.ApiLogWarn("DELETE", "api/user/{id}", "User ID was null.");
+            return BadRequest(new APIResponse<bool>(false, "DELETE", "User ID was not provided."));
+         }
+         if (string.IsNullOrEmpty(requestData.ModelId))
+         {
+            _logger.ApiLogWarn("DELETE", "api/user/{id}", "Model ID was null.");
+            return BadRequest(new APIResponse<bool>(false, "DELETE", "Model ID was not provided."));
+         }
+         var modelId = (ModelIDSelector?)requestData.PropId ?? ModelIDSelector.NONE;
+         if (modelId == ModelIDSelector.NONE)
+         {
+            _logger.ApiLogWarn("DELETE", "api/user/{id}", "Property type does not match.");
+            return BadRequest(new APIResponse<bool>(false, "DELETE", "Property type does not match."));
+         }
+         var result = await _userService.RemoveModelFromUserAsync(requestData.UserId, requestData.ModelId, modelId);
+         if (result)
+         {
+            _logger.ApiLogInfo("DELETE", "api/user/{id}", $"Successfuly removed model {requestData.ModelId} from user {requestData.UserId}.");
+            return Ok(new APIResponse<bool>(true, "DELETE"));
+         }
+         _logger.ApiLogWarn("DELETE", "api/user/{id}", $"Failed to remove model {requestData.ModelId} from user {requestData.UserId}.");
+         return BadRequest(new APIResponse<bool>(false, "DELETE", "Failed to remove model."));
       }
-      return BadRequest(new APIResponse<bool>(false, "DELETE", "Failed to remove model."));
+      catch (Exception e)
+      {
+         _logger.ApiLogError("DELETE", "api/user/{id}", "Internal Error", e);
+         throw;
+      }
    }
    #endregion
 }
