@@ -1,52 +1,107 @@
-using MongoDB.Driver;
+using CSVParserLibrary;
 
-using PartsHoleAPI.Collections;
-using PartsHoleAPI.Models;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 
-namespace PartsHoleAPI
+using PartsHoleAPI.DBServices;
+using PartsHoleAPI.DBServices.Interfaces;
+using PartsHoleAPI.Utils;
+
+using PartsHoleLib;
+
+namespace PartsHoleAPI;
+
+public class Program
 {
-   public class Program
+   public static void Main(string[] args)
    {
-      public static void Main(string[] args)
+      var builder = WebApplication.CreateBuilder(args);
+
+      #region Add config variables to Services
+      builder.Services.Configure<DatabaseSettings>(
+         builder.Configuration.GetSection("Database"));
+      builder.Services.Configure<Auth0Settings>(
+         builder.Configuration.GetSection("Auth0"));
+      #endregion
+
+      #region Add Logging to Services
+      builder.Services.AddLogging((loggerConfig) =>
       {
-         var builder = WebApplication.CreateBuilder(args);
-
-         // Add services to the container.
-
-         ////MongoClient client = new(builder.Configuration["Mongo:ConnectionString"]);
-
-         // Add services to the container.
-         builder.Services.Configure<DatabaseSettings>(
-             builder.Configuration.GetSection("DatabaseSettings"));
-
-         builder.Services.AddControllers();
-         // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-         builder.Services.AddEndpointsApiExplorer();
-         builder.Services.AddSwaggerGen();
-
-         builder.Services.AddSingleton<UserCollection>();
-         builder.Services.AddSingleton<PartsCollection>();
-
-         //var clientService = builder.Services.AddSingleton<IMongoClient>(client);
-
-
-         var app = builder.Build();
-
-         // Configure the HTTP request pipeline.
-         if (app.Environment.IsDevelopment())
+#if DEBUG
+         loggerConfig.AddConsoleFormatter<CustomConsoleFormatter, CustomConsoleOptions>();
+         loggerConfig.AddConsole((opt) =>
          {
-            app.UseSwagger();
-            app.UseSwaggerUI();
-         }
+            opt.FormatterName = "Custom";
+         });
+         loggerConfig.AddDebug();
+#endif
+      });
+      #endregion
 
-         app.UseHttpsRedirection();
+      #region Add Auth0 Authentication to Services
+      //RegisterAuth0(builder);
+      #endregion
 
-         app.UseAuthorization();
+      builder.Services.AddControllers();
+      // OpenAPI : https://aka.ms/aspnetcore/swashbuckle
+      builder.Services.AddEndpointsApiExplorer();
+      builder.Services.AddSwaggerGen();
 
+      builder.Services.AddRouting((options) => options.LowercaseUrls = true);
 
-         app.MapControllers();
+      RegisterModels(builder.Services);
+      RegisterCollectionServices(builder.Services);
 
-         app.Run();
+      var app = builder.Build();
+
+      #region Configure HTTP request pipeline.
+      if (app.Environment.IsDevelopment())
+      {
+         app.UseHttpLogging();
+         app.UseSwagger();
+         app.UseSwaggerUI();
+         app.UseCors((cors) =>
+         {
+            // Going to have to figure out What kind of CORS im gonna need.
+            cors.WithOrigins(
+               "https://localhost:3000"
+            );
+         });
       }
+
+      app.UseHttpsRedirection();
+      app.UseAuthorization();
+      app.MapControllers();
+      app.Run();
+      #endregion
+   }
+
+   private static void RegisterModels(IServiceCollection Services)
+   {
+      Services.AddTransient<ICSVParserOptions, CSVParserOptions>();
+      Services.AddAbstractFactory<ICSVParser, CSVParser>();
+   }
+
+   private static void RegisterCollectionServices(IServiceCollection Services)
+   {
+      Services.AddSingleton<IUserService, UserService>();
+      Services.AddSingleton<ICollectionService<PartModel>, CollectionService<PartModel>>();
+      Services.AddSingleton<ICollectionService<BinModel>, CollectionService<BinModel>>();
+      Services.AddSingleton<IInvoiceService, InvoiceService>();
+      Services.AddSingleton<IPartNumberService, PartNumberService>();
+   }
+
+   private static void RegisterAuth0(WebApplicationBuilder builder)
+   {
+      var auth0 = builder.Configuration.Get<Auth0Settings>();
+
+      builder.Services.AddAuthentication(opt =>
+      {
+         opt.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+         opt.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+      }).AddJwtBearer(opt =>
+      {
+         opt.Authority = builder.Configuration["Auth0:Authority"];
+         opt.Audience = builder.Configuration["Auth0:Audience"];
+      });
    }
 }
