@@ -1,14 +1,14 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
 using MongoDB.Bson;
-using MongoDB.Bson.Serialization.Attributes;
-using MongoDB.Bson.Serialization.Serializers;
 
-using PartsHoleAPI.DBServices;
+using PartsHoleAPI.DBServices.Interfaces;
+using PartsHoleAPI.Utils;
 
 using PartsHoleLib;
-using PartsHoleLib.Interfaces;
+using PartsHoleLib.Enums;
 
+using PartsHoleRestLibrary.Exceptions;
 using PartsHoleRestLibrary.Requests;
 using PartsHoleRestLibrary.Responses;
 
@@ -18,26 +18,29 @@ namespace PartsHoleAPI.Controllers;
 [ApiController]
 public class UserController : ControllerBase
 {
-   private readonly IUserCollection _userService;
-   private readonly ICollectionService<IPartModel> _partsCollection;
+   private readonly IUserService _userService;
+   private readonly ICollectionService<PartModel> _partsService;
+   private readonly ICollectionService<BinModel> _binService;
    private readonly IInvoiceService _invoiceService;
    private readonly ILogger<UserController> _logger;
 
    public UserController(
       ILogger<UserController> logger,
-      IUserCollection userCollection,
-      ICollectionService<IPartModel> partsCollection,
+      IUserService userService,
+      ICollectionService<PartModel> partsService,
+      ICollectionService<BinModel> binService,
       IInvoiceService invoiceService)
    {
-      _userService = userCollection;
-      _partsCollection = partsCollection;
+      _userService = userService;
+      _partsService = partsService;
+      _binService = binService;
       _invoiceService = invoiceService;
       _logger = logger;
    }
 
    #region API Methods
    /// <summary>
-   /// Gets an <see cref="IUserModel"/> based on the given <see cref="ObjectId"/>.
+   /// Gets an <see cref="UserModel"/> based on the given <see cref="ObjectId"/>.
    /// <list type="table">
    ///   <listheader>
    ///      <term>Method</term>
@@ -49,10 +52,10 @@ public class UserController : ControllerBase
    ///   </item>
    /// </list>
    /// </summary>
-   /// <param name="id">The <see cref="ObjectId"/> of the <see cref="IUserModel"/>.</param>
-   /// <returns><see cref="IUserModel"/> if found. Otherwise null.</returns>
+   /// <param name="id">The <see cref="ObjectId"/> of the <see cref="UserModel"/>.</param>
+   /// <returns><see cref="UserModel"/> if found. Otherwise null.</returns>
    [HttpGet("{id:length(24)}")]
-   public async Task<ActionResult<IUserModel>> Get(string id)
+   public async Task<ActionResult<UserModel>> Get(string id)
    {
       if (string.IsNullOrEmpty(id))
       {
@@ -66,7 +69,7 @@ public class UserController : ControllerBase
    }
 
    /// <summary>
-   /// Gets the users data from the <see cref="IUserModel"/>.
+   /// Gets the users data from the <see cref="UserModel"/>.
    /// <list type="table">
    ///   <item>
    ///      <term>POST</term>
@@ -74,34 +77,33 @@ public class UserController : ControllerBase
    ///   </item>
    ///   <item>
    ///      <term>BODY</term>
-   ///      <description><see cref="IUserModel"/> <paramref name="user"/></description>
+   ///      <description><see cref="UserModel"/> <paramref name="user"/></description>
    ///   </item>
    /// </list>
    /// </summary>
-   /// <param name="user"><see cref="IUserModel"/> to get data for.</param>
-   /// <returns><see cref="IUserData"/> containing all the <paramref name="user"/> data.</returns>
+   /// <param name="user"><see cref="UserModel"/> to get data for.</param>
+   /// <returns><see cref="UserData"/> containing all the <paramref name="user"/> data.</returns>
    [HttpPost("data")]
-   public async Task<ActionResult<APIResponse<IUserData?>>> PostGetUserData([FromBody] UserModel user)
+   public async Task<ActionResult<APIResponse<UserData?>>> PostGetUserData([FromBody] UserModel user)
    {
       if (user is null)
       {
-         _logger.LogWarning("Unable to construct user model from body.");
-         return BadRequest(new APIResponse<IUserData?>("POST", "No user data found in body."));
+         _logger.ApiLogWarn("POST", "api/user/data", "Unable to construct user model from body.");
+         return BadRequest(new APIResponse<UserData?>("POST", "No user data found in body."));
       }
       if (user.Parts is null && user.Invoices is null)
       {
-         _logger.LogWarning("No parts or invoice data found.");
-         return BadRequest(new APIResponse<IUserData?>("POST", "User has no data."));
+         _logger.ApiLogWarn("POST", "api/user/data", "No parts or invoice data found.");
+         return BadRequest(new APIResponse<UserData?>("POST", "User has no data."));
       }
       var response = await _userService.GetUserDataFromDatabaseAsync(user);
       return response is null
-         ? NotFound(new APIResponse<IUserData?>("POST", "No user data found Found"))
-         : Ok(new APIResponse<IUserData?>(response, "POST"));
+         ? NotFound(new APIResponse<UserData?>("POST", "No user data found Found"))
+         : Ok(new APIResponse<UserData?>(response, "POST"));
    }
 
-   // POST api/User
    /// <summary>
-   /// Creates a new <see cref="IUserModel"/> and saves it to the database.
+   /// Creates a new <see cref="UserModel"/> and saves it to the database.
    /// <list type="table">
    ///   <item>
    ///      <term>POST</term>
@@ -109,98 +111,87 @@ public class UserController : ControllerBase
    ///   </item>
    ///   <item>
    ///      <term>BODY</term>
-   ///      <description><see cref="IUserModel"/> <paramref name="newUser"/></description>
+   ///      <description><see cref="UserModel"/> <paramref name="newUser"/></description>
    ///   </item>
    /// </list>
    /// </summary>
-   /// <param name="newUser"><see cref="IUserModel"/> to create.</param>
+   /// <param name="newUser"><see cref="UserModel"/> to create.</param>
    /// <returns>True if successful, otherwise False.</returns>
    [HttpPost]
    public async Task<ActionResult<APIResponse<bool>>> Post([FromBody] UserModel? newUser)
    {
       if (newUser is null)
       {
-         _logger.LogWarning("Unable to construct user model from body.");
+         _logger.ApiLogWarn("POST", "api/user", "Unable to construct user model from body.");
          return BadRequest(new APIResponse<bool>(false, "POST", "Unable to construct user model from body."));
       }
       if (string.IsNullOrEmpty(newUser._id))
       {
-         _logger.LogWarning("User model has no valid ID.");
+         _logger.ApiLogWarn("POST", "api/user", "User model has no valid ID.");
          return BadRequest(new APIResponse<bool>(false, "POST", "User model has no valid ID."));
       }
       return Ok(new APIResponse<bool>(await _userService.AddToDatabaseAsync(newUser), "POST"));
    }
 
    /// <summary>
-   /// Adds a newly created <see cref="IPartModel"/> to the <see cref="IUserModel"/>.
+   /// Adds the passed model <see cref="ObjectId"/> to the users id collection.
    /// <list type="table">
    ///   <item>
    ///      <term>POST</term>
-   ///      <description>api/user/add-part</description>
+   ///      <description>api/user/add-model</description>
    ///   </item>
    ///   <item>
    ///      <term>BODY</term>
-   ///      <description><see cref="AppendRequestModel"/> <paramref name="data"/></description>
+   ///      <description><see cref="RequestUpdateListModel"/> <paramref name="requestData"/></description>
    ///   </item>
    /// </list>
    /// </summary>
-   /// <param name="data"><see cref="IUserModel"/> ID and <see cref="IPartModel"/> ID.</param>
+   /// <param name="requestData"><see cref="UserModel"/> ID, <see cref="BinModel"/> ID, and <see cref="ModelIDSelector"/>.</param>
    /// <returns>True if successful, otherwise False.</returns>
-   [HttpPost("add-part")]
-   public async Task<ActionResult<APIResponse<bool>>> PostAppendPart([FromBody] AppendRequestModel data)
+   [HttpPost("add-model")]
+   public async Task<ActionResult<APIResponse<bool>>> PostAppendModel([FromBody] RequestUpdateListModel requestData)
    {
-      if (data.UserId is null)
-         return BadRequest(new APIResponse<bool>(false, "POST", "Unable to find user ID."));
-      if (string.IsNullOrEmpty(data.ModelId))
-         return BadRequest(new APIResponse<bool>(false, "POST", "Part ID not found."));
-      if (data.ModelId.Length != 24)
-         return BadRequest(new APIResponse<bool>(false, "POST", "Part ID is not valid."));
-      var user = await _userService.GetFromDatabaseAsync(data.UserId);
-      if (user is null)
-         return NotFound("User not found.");
-      var part = await _partsCollection.GetFromDatabaseAsync(data.ModelId);
-      if (part is null)
-         return NotFound("Part not found.");
-      user.Parts.Add(data.ModelId);
-      return new APIResponse<bool>(await _userService.UpdateDatabaseAsync(data.UserId, user), "POST");
+      try
+      {
+         if (string.IsNullOrEmpty(requestData.UserId))
+         {
+            _logger.ApiLogInfo("POST", "api/user/add-model", "User ID was not provided.");
+            return BadRequest(new APIResponse<bool>(false, "POST", "User ID was not provided."));
+         }
+         if (string.IsNullOrEmpty(requestData.ModelId))
+         {
+            _logger.ApiLogInfo("POST", "api/user/add-model", "Model ID was not provided.");
+            return BadRequest(new APIResponse<bool>(false, "POST", "Model ID was not provided."));
+         }
+         var modelId = (ModelIDSelector?)requestData.PropId ?? ModelIDSelector.NONE;
+         if (modelId == ModelIDSelector.NONE)
+         {
+            _logger.ApiLogWarn("POST", "api/user/add-model", "Property type does not match.");
+            return BadRequest(new APIResponse<bool>(false, "POST", "Property type does not match."));
+         }
+         var result = await _userService.AppendModelToUserAsync(requestData.UserId, requestData.ModelId, modelId);
+         if (result)
+         {
+            _logger.ApiLogInfo("POST", "api/user/add-model", "Success");
+            return Ok(new APIResponse<bool>(true, "POST"));
+         }
+         _logger.ApiLogWarn("POST", "api/user/add-model", "Failed to remove model.");
+         return BadRequest(new APIResponse<bool>(false, "POST", "Failed to remove model."));
+      }
+      catch (ModelNotFoundException e)
+      {
+         _logger.ApiLogWarn("POST", "api/user/add-model", $"Unable to find {e.ModelName}");
+         return NotFound(new APIResponse<bool>(false, "POST", $"Unable to find {e.ModelName}"));
+      }
+      catch (Exception e)
+      {
+         _logger.ApiLogError("POST", "api/user/add-model", "Internal Error", e);
+         throw;
+      }
    }
 
    /// <summary>
-   /// Adds a newly created <see cref="IInvoiceModel"/> to the <see cref="IUserModel"/>.
-   /// <list type="table">
-   ///   <item>
-   ///      <term>POST</term>
-   ///      <description>api/user/add-invoice</description>
-   ///   </item>
-   ///   <item>
-   ///      <term>BODY</term>
-   ///      <description><see cref="AppendRequestModel"/> <paramref name="data"/></description>
-   ///   </item>
-   /// </list>
-   /// </summary>
-   /// <param name="data"><see cref="IUserModel"/> ID and <see cref="IInvoiceModel"/> ID.</param>
-   /// <returns>True if successful, otherwise False.</returns>
-   [HttpPost("add-invoice")]
-   public async Task<ActionResult<APIResponse<bool>>> PostAppendInvoice([FromBody] AppendRequestModel data)
-   {
-      if (data.UserId is null)
-         return BadRequest(new APIResponse<bool>(false, "POST", "Unable to find user ID."));
-      if (string.IsNullOrEmpty(data.ModelId))
-         return BadRequest(new APIResponse<bool>(false, "POST", "Part ID not found."));
-      if (data.ModelId.Length != 24)
-         return BadRequest(new APIResponse<bool>(false, "POST", "Part ID is not valid."));
-      var user = await _userService.GetFromDatabaseAsync(data.UserId);
-      if (user is null)
-         return NotFound("User not found.");
-      var invoice = await _invoiceService.GetFromDatabaseAsync(data.ModelId);
-      if (invoice is null)
-         return NotFound("Invoice not found.");
-      user.Invoices.Add(data.ModelId);
-      return new APIResponse<bool>(await _userService.UpdateDatabaseAsync(data.UserId, user), "POST");
-   }
-
-   /// <summary>
-   /// Updates an <see cref="IUserModel"/>.
+   /// Updates an <see cref="UserModel"/>.
    /// <list type="table">
    ///   <item>
    ///      <term>PUT</term>
@@ -208,20 +199,40 @@ public class UserController : ControllerBase
    ///   </item>
    ///   <item>
    ///      <term>BODY</term>
-   ///      <description><see cref="IUserModel"/> <paramref name="updatedUser"/></description>
+   ///      <description><see cref="UserModel"/> <paramref name="updatedUser"/></description>
    ///   </item>
    /// </list>
    /// </summary>
-   /// <param name="updatedUser">Udated <see cref="IUserModel"/>.</param>
+   /// <param name="updatedUser">Udated <see cref="UserModel"/>.</param>
    /// <returns>True if successful, otherwise False.</returns>
    [HttpPut]
-   public async Task<ActionResult<APIResponse<bool>>> Put([FromBody] UserModel updatedUser) =>
-      updatedUser is null
-         ? BadRequest(new APIResponse<bool>(false, "PUT", "Unable to find user."))
-         : Ok(new APIResponse<bool>(await _userService.UpdateDatabaseAsync(updatedUser._id, updatedUser), "PUT"));
+   public async Task<ActionResult<APIResponse<bool>>> Put([FromBody] UserModel updatedUser)
+   {
+      if (updatedUser == null)
+      {
+         _logger.ApiLogWarn("PUT", "api/user", "Unable to find user.");
+         return BadRequest(new APIResponse<bool>(false, "PUT", "Unable to find user."));
+      }
+
+      try
+      {
+         if (await _userService.UpdateDatabaseAsync(updatedUser._id, updatedUser))
+         {
+            _logger.ApiLogInfo("PUT", "api/user", $"Successfully updated user {updatedUser._id}");
+            return Ok(new APIResponse<bool>(true, "PUT"));
+         }
+         _logger.ApiLogWarn("PUT", "api/user", $"Unable to update user {updatedUser._id}");
+         return BadRequest(new APIResponse<bool>(false, "PUT"));
+      }
+      catch (Exception e)
+      {
+         _logger.ApiLogError("PUT", "api/user", "Internal Error", e);
+         throw;
+      }
+   }
 
    /// <summary>
-   /// Deletes an <see cref="IUserModel"/> based on the <see cref="ObjectId"/>.
+   /// Deletes an <see cref="UserModel"/> based on the <see cref="ObjectId"/>.
    /// <list type="table">
    ///   <item>
    ///      <term>DELETE</term>
@@ -229,14 +240,83 @@ public class UserController : ControllerBase
    ///   </item>
    /// </list>
    /// </summary>
-   /// <param name="updatedUser">Udated <see cref="IUserModel"/>.</param>
+   /// <param name="id"><see cref="ObjectId"/> of the <see cref="UserModel"/> to delete.</param>
    /// <returns>True if successful, otherwise False.</returns>
    [HttpDelete("{id:length(24)}")]
-   public async Task<ActionResult<APIResponse<bool>>> Delete(string id) =>
-      string.IsNullOrEmpty(id)
-         ? BadRequest(new APIResponse<bool>(false, "DELETE", "Unable to find user ID."))
-         : await _userService.DeleteFromDatabaseAsync(id)
-            ? Ok(new APIResponse<bool>(true, "DELETE", $"User {id} Deleted"))
-            : BadRequest(new APIResponse<bool>(false, "DELETE", "Unable to delete user."));
+   public async Task<ActionResult<APIResponse<bool>>> Delete(string id)
+   {
+      try
+      {
+         if (string.IsNullOrEmpty(id))
+         {
+            _logger.ApiLogWarn("DELETE", "api/user/{id}", "Provided id was null.");
+            return BadRequest(new APIResponse<bool>(false, "DELETE", "Unable to find user ID."));
+         }
+         if (await _userService.DeleteFromDatabaseAsync(id))
+         {
+            _logger.ApiLogInfo("DELETE", "api/user/{id}", $"Sucessfully deleted user {id}");
+            return Ok(new APIResponse<bool>(true, "DELETE", $"User {id} Deleted."));
+         }
+         _logger.ApiLogWarn("DELETE", "api/user/{id}", $"Unable to deleted user {id}");
+         return BadRequest(new APIResponse<bool>(false, "DELETE", "Unable to delete user."));
+      }
+      catch (Exception e)
+      {
+         _logger.ApiLogError("DELETE", "api/user/{id}", "Internal Error", e);
+         throw;
+      }
+   }
+
+   /// <summary>
+   /// Removes a model <see cref="ObjectId"/> from the <see cref="UserModel"/>.
+   /// <list type="table">
+   ///   <item>
+   ///      <term>DELETE</term>
+   ///      <description>api/user/{<paramref name="id"/>}</description>
+   ///   </item>
+   ///   <item>
+   ///      <term>BODY</term>
+   ///      <description><see cref="RequestUpdateListModel"/> <paramref name="requestData"/></description>
+   ///   </item>
+   /// </list>
+   /// </summary>
+   /// <param name="requestData">Contains the User <see cref="ObjectId"/>, Model <see cref="ObjectId"/>, and the Property <see cref="ModelIDSelector"/>.</param>
+   /// <returns>True if successful, otherwise False.</returns>
+   [HttpDelete("remove-model")]
+   public async Task<ActionResult<APIResponse<bool>>> DeleteRemoveModel([FromBody] RequestUpdateListModel requestData)
+   {
+      try
+      {
+         if (string.IsNullOrEmpty(requestData.UserId))
+         {
+            _logger.ApiLogWarn("DELETE", "api/user/{id}", "User ID was null.");
+            return BadRequest(new APIResponse<bool>(false, "DELETE", "User ID was not provided."));
+         }
+         if (string.IsNullOrEmpty(requestData.ModelId))
+         {
+            _logger.ApiLogWarn("DELETE", "api/user/{id}", "Model ID was null.");
+            return BadRequest(new APIResponse<bool>(false, "DELETE", "Model ID was not provided."));
+         }
+         var modelId = (ModelIDSelector?)requestData.PropId ?? ModelIDSelector.NONE;
+         if (modelId == ModelIDSelector.NONE)
+         {
+            _logger.ApiLogWarn("DELETE", "api/user/{id}", "Property type does not match.");
+            return BadRequest(new APIResponse<bool>(false, "DELETE", "Property type does not match."));
+         }
+         var result = await _userService.RemoveModelFromUserAsync(requestData.UserId, requestData.ModelId, modelId);
+         if (result)
+         {
+            _logger.ApiLogInfo("DELETE", "api/user/{id}", $"Successfuly removed model {requestData.ModelId} from user {requestData.UserId}.");
+            return Ok(new APIResponse<bool>(true, "DELETE"));
+         }
+         _logger.ApiLogWarn("DELETE", "api/user/{id}", $"Failed to remove model {requestData.ModelId} from user {requestData.UserId}.");
+         return BadRequest(new APIResponse<bool>(false, "DELETE", "Failed to remove model."));
+      }
+      catch (Exception e)
+      {
+         _logger.ApiLogError("DELETE", "api/user/{id}", "Internal Error", e);
+         throw;
+      }
+   }
    #endregion
 }

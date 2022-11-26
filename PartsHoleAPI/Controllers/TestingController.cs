@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
-
-using PartsHoleAPI.DBServices;
+using PartsHoleAPI.DBServices.Interfaces;
+using PartsHoleAPI.Utils;
 
 using PartsHoleLib;
 using PartsHoleLib.Interfaces;
@@ -12,24 +12,26 @@ namespace PartsHoleAPI.Controllers;
 [ApiController]
 public class TestingController : ControllerBase
 {
-   private readonly ICollectionService<IPartModel> _partsCollection;
-   public TestingController(ICollectionService<IPartModel> partsCollection)
+   private readonly ILogger<TestingController> _logger;
+   private readonly ICollectionService<PartModel> _partsCollection;
+   public TestingController(ILogger<TestingController> logger, ICollectionService<PartModel> partsCollection)
    {
+      _logger = logger;
       _partsCollection = partsCollection;
    }
 
    // GET: api/<TestingController>
    [HttpGet]
-   public async Task<ActionResult<IPartModel?>> Get()
+   public string Get()
    {
-      var part = await _partsCollection.GetFromDatabaseAsync("6360180d1a792e2787223cff");
-
-      return part is null ? NotFound() : Ok(part);
+      //_logger.ApiLog(LogLevel.Debug, "GET", "api/testing", "Test Message...");
+      _logger.ApiLogInfo("GET", "api/testing", "Test Message...");
+      return "Done";
    }
 
    // GET api/<TestingController>/6360180d1a792e2787223cff
    [HttpGet("{id:length(24)}")]
-   public async Task<ActionResult<IPartModel?>> Get(string id)
+   public async Task<ActionResult<PartModel?>> Get(string id)
    {
       if (string.IsNullOrEmpty(id))
       {

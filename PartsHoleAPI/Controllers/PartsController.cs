@@ -2,7 +2,8 @@
 
 using MongoDB.Bson;
 
-using PartsHoleAPI.DBServices;
+using PartsHoleAPI.DBServices.Interfaces;
+using PartsHoleAPI.Utils;
 
 using PartsHoleLib;
 using PartsHoleLib.Interfaces;
@@ -16,14 +17,14 @@ namespace PartsHoleAPI.Controllers;
 public class PartsController : ControllerBase
 {
    #region Props
-   private readonly ICollectionService<IPartModel> _collection;
+   private readonly ICollectionService<PartModel> _collection;
    private readonly ILogger<PartsController> _logger;
    #endregion
 
    #region Constructors
    public PartsController(
       ILogger<PartsController> logger,
-      ICollectionService<IPartModel> partsCollection
+      ICollectionService<PartModel> partsCollection
       )
    {
       _collection = partsCollection;
@@ -44,10 +45,24 @@ public class PartsController : ControllerBase
    /// <param name="id"><see cref="ObjectId"/> to search for.</param>
    /// <returns><see cref="IPartModel"/> found. Null if unable.</returns>
    [HttpGet("{id:length(24)}")]
-   public async Task<ActionResult<IPartModel?>> Get(string id)
+   public async Task<APIResponse<PartModel>> Get(string id)
    {
-      if (string.IsNullOrEmpty(id)) return BadRequest();
-      return Ok(await _collection.GetFromDatabaseAsync(id));
+      try
+      {
+         var foundPart = await _collection.GetFromDatabaseAsync(id);
+         if (foundPart == null)
+         {
+            _logger.ApiLogWarn("GET", "api/parts/{id}", $"Unable to find part {id}");
+            return new("GET", $"Unable to find part {id}.");
+         }
+         _logger.ApiLogInfo("GET", "api/parts/{id}", $"Successfuly found part {id}");
+         return new(foundPart, "GET");
+      }
+      catch (Exception e)
+      {
+         _logger.ApiLogError("GET", "api/parts/{id}", "Internal Error", e);
+         throw;
+      }
    }
 
    /// <summary>
@@ -64,14 +79,22 @@ public class PartsController : ControllerBase
    /// </list>
    /// </summary>
    /// <param name="ids"><see cref="List{T}"/> of <see cref="ObjectId"/>s to get.</param>
-   /// <returns><see cref="List{T}"/> of <see cref="IPartModel"/>s. Null if unable.</returns>
+   /// <returns><see cref="List{T}"/> of <see cref="PartModel"/>s. Null if unable.</returns>
    [HttpPost("get-many")]
-   public async Task<ActionResult<APIResponse<IEnumerable<IPartModel>?>>> PostGetManyParts([FromBody] string[] ids)
+   public async Task<APIResponse<IEnumerable<PartModel>>> PostGetManyParts([FromBody] string[] ids)
    {
       if (ids is null)
-         return BadRequest(new APIResponse<IEnumerable<IPartModel>?>(null, "POST", "No part IDs found."));
+      {
+         _logger.ApiLogWarn("POST", "api/parts/get-many", "No part IDs found.");
+         return new("POST", "No part IDs found.");
+      }
       var data = await _collection.GetFromDatabaseAsync(ids);
-      return Ok(new APIResponse<IEnumerable<IPartModel>?>(data, "POST"));
+      if (data == null)
+      {
+         _logger.ApiLogWarn("POST", "api/parts/get-many", "No part models found.");
+         return new("POST", "No part models found.");
+      }
+      return new(data, "POST");
    }
 
    /// <summary>
@@ -83,21 +106,39 @@ public class PartsController : ControllerBase
    ///   </item>
    ///   <item>
    ///      <term>BODY</term>
-   ///      <description><see cref="IPartModel"/> <paramref name="newPart"/></description>
+   ///      <description><see cref="PartModel"/> <paramref name="newPart"/></description>
    ///   </item>
    /// </list>
    /// </summary>
-   /// <param name="newPart">New <see cref="IPartModel"/> to create.</param>
+   /// <param name="newPart">New <see cref="PartModel"/> to create.</param>
    /// <returns><see langword="true"/> if successful, otherwise <see langword="false"/>.</returns>
    [HttpPost]
-   public async Task<ActionResult<APIResponse<bool>>> Post([FromBody] PartModel newPart)
+   public async Task<APIResponse<bool>> Post([FromBody] PartModel newPart)
    {
-      if (newPart is null) return BadRequest(new APIResponse<bool>(false, "POST", "No part found."));
-      return Ok(new APIResponse<bool>(await _collection.AddToDatabaseAsync(newPart), "POST"));
+      try
+      {
+         if (newPart is null)
+         {
+            _logger.ApiLogWarn("POST", "api/parts", "Body was null.");
+            return new("POST", "Body is null.");
+         }
+         if (await _collection.AddToDatabaseAsync(newPart))
+         {
+            _logger.ApiLogInfo("POST", "api/parts", "Part successfully added to database.");
+            return new(true, "POST");
+         }
+         _logger.ApiLogWarn("POST", "api/parts", "Unable to add part to database.");
+         return new(false, "POST", "Unable to add part to database.");
+      }
+      catch (Exception e)
+      {
+         _logger.ApiLogError("POST", "api/parts", "Internal Error", e);
+         throw;
+      }
    }
 
    /// <summary>
-   /// Creates multiple <see cref="IPartModel"/>s.
+   /// Creates multiple <see cref="PartModel"/>s.
    /// <list type="table">
    ///   <item>
    ///      <term>POST</term>
@@ -105,45 +146,85 @@ public class PartsController : ControllerBase
    ///   </item>
    ///   <item>
    ///      <term>BODY</term>
-   ///      <description><see cref="List{T}"/> of <see cref="IPartModel"/> <paramref name="newParts"/></description>
+   ///      <description><see cref="List{T}"/> of <see cref="PartModel"/> <paramref name="newParts"/></description>
    ///   </item>
    /// </list>
    /// </summary>
-   /// <param name="newParts"><see cref="List{T}"/> of new <see cref="IPartModel"/>s to create.</param>
+   /// <param name="newParts"><see cref="List{T}"/> of new <see cref="PartModel"/>s to create.</param>
    /// <returns><see cref="List{T}"/> of <see cref="bool"/>s where; <see langword="true"/> if successful, otherwise <see langword="false"/>.</returns>
    [HttpPost("many")]
-   public async Task<ActionResult<APIResponse<IEnumerable<bool>?>>> PostMany([FromBody] PartModel[] newParts)
+   public async Task<APIResponse<IEnumerable<bool>?>> PostMany([FromBody] PartModel[] newParts)
    {
-      if (newParts is null) return BadRequest(new APIResponse<IEnumerable<bool>?>(null, "POST", "No parts found."));
-      return Ok(new APIResponse<IEnumerable<bool>?>(await _collection.AddToDatabaseAsync(newParts), "POST"));
+      try
+      {
+         if (newParts is null)
+         {
+            _logger.ApiLogWarn("POST", "api/parts/many", "Body was null.");
+            return new("POST", "Body is null.");
+         }
+         var successList = await _collection.AddToDatabaseAsync(newParts);
+         if (successList != null)
+         {
+            _logger.ApiLogInfo("POST", "api/parts/many", $"Successfully added {newParts.Length} parts to database.");
+            return new(successList, "POST");
+         }
+         _logger.ApiLogWarn("POST", "api/parts/many", "No parts added to database.");
+         return new("POST", "No parts added to database.");
+      }
+      catch (Exception e)
+      {
+         _logger.ApiLogError("POST", "api/parts/many", "Internal Error", e);
+         throw;
+      }
    }
 
    /// <summary>
-   /// Updates an <see cref="IPartModel"/>.
+   /// Updates an <see cref="PartModel"/>.
    /// <list type="table">
    ///   <item>
    ///      <term>PUT</term>
-   ///      <description>api/parts/{<paramref name="id"/>}</description>
+   ///      <description>api/parts</description>
    ///   </item>
    ///   <item>
    ///      <term>BODY</term>
-   ///      <description><see cref="IPartModel"/> <paramref name="updatedPart"/></description>
+   ///      <description><see cref="PartModel"/> <paramref name="updatedPart"/></description>
    ///   </item>
    /// </list>
    /// </summary>
-   /// <param name="id"><see cref="ObjectId"/> of the <see cref="IPartModel"/> to update.</param>
-   /// <param name="updatedPart">Updated <see cref="IPartModel"/> data.</param>
+   /// <param name="updatedPart">Updated <see cref="PartModel"/> data.</param>
    /// <returns><see langword="true"/> if successful, otherwise <see langword="false"/></returns>
-   [HttpPut("{id:length(24)}")]
-   public async Task<ActionResult<APIResponse<bool>>> Put(string id, [FromBody] PartModel updatedPart)
+   [HttpPut]
+   public async Task<APIResponse<bool>> Put([FromBody] PartModel updatedPart)
    {
-      if (string.IsNullOrEmpty(id)) return BadRequest(new APIResponse<bool>(false, "PUT", "ID not found."));
-      if (id.Length != 24) return BadRequest(new APIResponse<bool>(false, "PUT", "ID not valid."));
-      return Ok(new APIResponse<bool>(await _collection.UpdateDatabaseAsync(id, updatedPart), "PUT"));
+      try
+      {
+         if (string.IsNullOrEmpty(updatedPart._id))
+         {
+            _logger.ApiLogWarn("PUT", "api/parts", "Updated part ID was null.");
+            return new(false, "PUT", "Updated part ID is null.");
+         }
+         if (updatedPart._id.Length != 24)
+         {
+            _logger.ApiLogWarn("PUT", "api/parts", "Unable to validate updated part ID.");
+            return new(false, "PUT", "ID not valid.");
+         }
+         if (await _collection.UpdateDatabaseAsync(updatedPart._id, updatedPart))
+         {
+            _logger.ApiLogInfo("PUT", "api/parts", $"Successfully updated part {updatedPart._id}");
+            return new(true, "PUT");
+         }
+         _logger.ApiLogWarn("PUT", "api/parts", "Unable to updated part model.");
+         return new(false, "PUT", "Unable to updated part model.");
+      }
+      catch (Exception e)
+      {
+         _logger.ApiLogError("PUT", "api/parts", "Internal Error", e);
+         throw;
+      }
    }
 
    /// <summary>
-   /// Update multiple <see cref="IPartModel"/>s.
+   /// Update multiple <see cref="PartModel"/>s.
    /// <list type="table">
    ///   <item>
    ///      <term>PUT</term>
@@ -151,22 +232,45 @@ public class PartsController : ControllerBase
    ///   </item>
    ///   <item>
    ///      <term>BODY</term>
-   ///      <description><see cref="List{T}"/> <see cref="IPartModel"/> <paramref name="updatedParts"/></description>
+   ///      <description><see cref="List{T}"/> <see cref="PartModel"/> <paramref name="updatedParts"/></description>
    ///   </item>
    /// </list>
    /// </summary>
-   /// <param name="updatedParts"><see cref="List{T}"/> of <see cref="IPartModel"/>s to update.</param>
+   /// <param name="updatedParts"><see cref="List{T}"/> of <see cref="PartModel"/>s to update.</param>
    /// <returns><see cref="List{T}"/> of <see cref="bool"/>s according to the index where; <see langword="true"/> if successful, otherwise <see langword="false"/>.</returns>
    [HttpPut("many")]
-   public async Task<ActionResult<APIResponse<IEnumerable<bool>?>>> PutMany([FromBody] PartModel[] updatedParts)
+   public async Task<APIResponse<IEnumerable<bool>>> PutMany([FromBody] PartModel[] updatedParts)
    {
-      if (updatedParts is null) return BadRequest(new APIResponse<IEnumerable<bool>?>(null, "PUT", "No parts found."));
-      if (updatedParts.Length <= 0) return BadRequest(new APIResponse<IEnumerable<bool>?>(null, "PUT", "No parts in array."));
-      return Ok(new APIResponse<IEnumerable<bool>?>(await _collection.UpdateDatabaseAsync(updatedParts), "PUT"));
+      try
+      {
+         if (updatedParts is null)
+         {
+            _logger.ApiLogWarn("PUT", "api/parts/many", "Body was null.");
+            return new("PUT", "Body is null.");
+         }
+         if (updatedParts.Length <= 0)
+         {
+            _logger.ApiLogWarn("PUT", "api/parts/many", "No parts found in request body.");
+            return new("PUT", "No parts found in request body.");
+         }
+         var successList = await _collection.UpdateDatabaseAsync(updatedParts);
+         if (successList is null)
+         {
+            _logger.ApiLogWarn("PUT", "api/parts/many", "Unable to update parts.");
+            return new("PUT", "Unable to update parts.");
+         }
+         _logger.ApiLogInfo("PUT", "api/parts/many", "Parts updated in database.");
+         return new(successList, "PUT");
+      }
+      catch (Exception e)
+      {
+         _logger.ApiLogError("PUT", "api/parts/many", "Internal Error", e);
+         throw;
+      }
    }
 
    /// <summary>
-   /// Delete an <see cref="IPartModel"/> from the database.
+   /// Delete an <see cref="PartModel"/> from the database.
    /// <list type="table">
    ///   <item>
    ///      <term>DELETE</term>
@@ -174,18 +278,30 @@ public class PartsController : ControllerBase
    ///   </item>
    /// </list>
    /// </summary>
-   /// <param name="id">The <see cref="ObjectId"/> of the <see cref="IPartModel"/> to delete.</param>
+   /// <param name="id">The <see cref="ObjectId"/> of the <see cref="PartModel"/> to delete.</param>
    /// <returns><see langword="true"/> if successful, otherwise <see langword="false"/></returns>
    [HttpDelete("{id:length(24)}")]
-   public async Task<ActionResult<APIResponse<bool>>> Delete(string id)
+   public async Task<APIResponse<bool>> Delete(string id)
    {
-      if (string.IsNullOrEmpty(id)) return BadRequest(new APIResponse<bool>(false, "DELETE", "ID not found."));
-      if (id.Length != 24) return BadRequest(new APIResponse<bool>(false, "DELETE", "ID not valid."));
-      return Ok(new APIResponse<bool>(await _collection.DeleteFromDatabaseAsync(id), "DELETE"));
+      try
+      {
+         if (await _collection.DeleteFromDatabaseAsync(id))
+         {
+            _logger.ApiLogInfo("DELETE", "api/parts/{id}", $"Deleted part {id} from database.");
+            return new(true, "DELETE", $"Deleted part { id } from database.");
+         }
+         _logger.ApiLogWarn("DELETE", "api/parts/{id}", $"Unable to delete part {id} database.");
+         return new(false, "DELETE", $"Unable to delete part {id} database.");
+      }
+      catch (Exception e)
+      {
+         _logger.ApiLogError("PUT", "api/parts/{id}", "Internal Error", e);
+         throw;
+      }
    }
 
    /// <summary>
-   /// Delete multiple <see cref="IPartModel"/>s from the database.
+   /// Delete multiple <see cref="PartModel"/>s from the database.
    /// <list type="table">
    ///   <item>
    ///      <term>DELETE</term>
@@ -198,15 +314,36 @@ public class PartsController : ControllerBase
    /// </list>
    /// </summary>
    /// <param name="ids"><see cref="List{T}"/> of <see cref="ObjectId"/>s to delete.</param>
-   /// <returns>Number (<see cref="int"/>) of <see cref="IPartModel"/>s successfully deleted.</returns>
+   /// <returns>Number (<see cref="int"/>) of <see cref="PartModel"/>s successfully deleted.</returns>
    [HttpDelete("many")]
-   public async Task<ActionResult<APIResponse<int>>> DeleteMany([FromBody] string[] ids)
+   public async Task<APIResponse<int>> DeleteMany([FromBody] string[] ids)
    {
-      if (ids is null)
-         return BadRequest(new APIResponse<int>(0, "DELETE", "No IDs found."));
-      if (ids.Length == 0)
-         return BadRequest(new APIResponse<int>(0, "DELETE", "No IDs found."));
-      return Ok(new APIResponse<int>(await _collection.DeleteFromDatabaseAsync(ids), "DELETE"));
+      try
+      {
+         if (ids is null)
+         {
+            _logger.ApiLogWarn("DELETE", "api/parts/many", "Body was null.");
+            return new("DELETE", "No IDs found.");
+         }
+         if (ids.Length == 0)
+         {
+            _logger.ApiLogWarn("DELETE", "api/parts/many", "No IDs found.");
+            return new(0, "DELETE", "No IDs found.");
+         }
+         var deletedCount = await _collection.DeleteFromDatabaseAsync(ids);
+         if (deletedCount > 0)
+         {
+            _logger.ApiLogInfo("DELETE", "api/parts/many", $"Deleted {deletedCount} from database");
+            return new(deletedCount, "DELETE");
+         }
+         _logger.ApiLogInfo("DELETE", "api/parts/many", "Unable to delete parts.");
+         return new("DELETE", "Unable to delete parts.");
+      }
+      catch (Exception e)
+      {
+         _logger.ApiLogError("DELETE", "api/parts/many", "Internal Error", e);
+         throw;
+      }
    }
    #endregion
 }

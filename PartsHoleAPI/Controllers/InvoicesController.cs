@@ -3,10 +3,10 @@
 using CSVParserLibrary;
 
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
 
 using MongoDB.Bson;
-
-using PartsHoleAPI.DBServices;
+using PartsHoleAPI.DBServices.Interfaces;
 using PartsHoleAPI.Utils;
 
 using PartsHoleLib;
@@ -51,7 +51,7 @@ public class InvoicesController : ControllerBase
    /// <param name="id"><see cref="ObjectId"/> to search for.</param>
    /// <returns><see cref="IInvoiceModel"/> found. Null if unable.</returns>
    [HttpGet("{id:length(24)}")]
-   public async Task<ActionResult<IPartModel?>> Get(string id)
+   public async Task<ActionResult<PartModel?>> Get(string id)
    {
       if (string.IsNullOrEmpty(id))
          return BadRequest();
@@ -59,7 +59,7 @@ public class InvoicesController : ControllerBase
    }
 
    /// <summary>
-   /// Creates a new <see cref="IInvoiceModel"/>.
+   /// Creates a new <see cref="InvoiceModel"/>.
    /// <list type="table">
    ///   <item>
    ///      <term>POST</term>
@@ -67,11 +67,11 @@ public class InvoicesController : ControllerBase
    ///   </item>
    ///   <item>
    ///      <term>BODY</term>
-   ///      <description><see cref="IInvoiceModel"/> <paramref name="newInvoice"/></description>
+   ///      <description><see cref="InvoiceModel"/> <paramref name="newInvoice"/></description>
    ///   </item>
    /// </list>
    /// </summary>
-   /// <param name="newInvoice">New <see cref="IInvoiceModel"/> to create.</param>
+   /// <param name="newInvoice">New <see cref="InvoiceModel"/> to create.</param>
    /// <returns><see langword="true"/> if successful, otherwise <see langword="false"/>.</returns>
    [HttpPost]
    public async Task<ActionResult<APIResponse<bool>>> Post([FromBody] InvoiceModel newInvoice)
@@ -93,7 +93,7 @@ public class InvoicesController : ControllerBase
    }
 
    /// <summary>
-   /// Creates multiple <see cref="IInvoiceModel"/>s.
+   /// Creates multiple <see cref="InvoiceModel"/>s.
    /// <list type="table">
    ///   <item>
    ///      <term>POST</term>
@@ -101,11 +101,11 @@ public class InvoicesController : ControllerBase
    ///   </item>
    ///   <item>
    ///      <term>BODY</term>
-   ///      <description><see cref="List{T}"/> of <see cref="IInvoiceModel"/> <paramref name="newInvoices"/></description>
+   ///      <description><see cref="List{T}"/> of <see cref="InvoiceModel"/> <paramref name="newInvoices"/></description>
    ///   </item>
    /// </list>
    /// </summary>
-   /// <param name="newInvoices"><see cref="List{T}"/> of new <see cref="IInvoiceModel"/>s to create.</param>
+   /// <param name="newInvoices"><see cref="List{T}"/> of new <see cref="InvoiceModel"/>s to create.</param>
    /// <returns><see cref="List{T}"/> of <see cref="bool"/>s where; <see langword="true"/> if successful, otherwise <see langword="false"/>.</returns>
    [HttpPost("many")]
    public async Task<ActionResult<APIResponse<IEnumerable<bool>?>>> PostMany([FromBody] InvoiceModel[] newInvoices)
@@ -126,33 +126,34 @@ public class InvoicesController : ControllerBase
    }
 
    /// <summary>
-   /// Updates an <see cref="IInvoiceModel"/>.
+   /// Updates an <see cref="InvoiceModel"/>.
    /// <list type="table">
    ///   <item>
    ///      <term>PUT</term>
-   ///      <description>api/invoices/{<paramref name="id"/>}</description>
+   ///      <description>api/invoices</description>
    ///   </item>
    ///   <item>
    ///      <term>BODY</term>
-   ///      <description><see cref="IInvoiceModel"/> <paramref name="updatedInvoice"/></description>
+   ///      <description><see cref="InvoiceModel"/> <paramref name="updatedInvoice"/></description>
    ///   </item>
    /// </list>
    /// </summary>
-   /// <param name="id"><see cref="ObjectId"/> of the <see cref="IInvoiceModel"/> to update.</param>
-   /// <param name="updatedInvoice">Updated <see cref="IInvoiceModel"/> data.</param>
+   /// <param name="updatedInvoice">Updated <see cref="InvoiceModel"/> data.</param>
    /// <returns><see langword="true"/> if successful, otherwise <see langword="false"/></returns>
-   [HttpPut("{id:length(24)}")]
-   public async Task<ActionResult<APIResponse<bool>>> Put(string id, [FromBody] InvoiceModel updatedInvoice)
+   [HttpPut]
+   public async Task<ActionResult<APIResponse<bool>>> Put([FromBody] InvoiceModel updatedInvoice)
    {
-      if (string.IsNullOrEmpty(id))
+      if (updatedInvoice is null)
+         return BadRequest(new APIResponse<bool>(false, "PUT", "Method body not found"));
+      if (string.IsNullOrEmpty(updatedInvoice._id))
          return BadRequest(new APIResponse<bool>(false, "PUT", "ID not found"));
-      return id.Length != 24
+      return updatedInvoice._id.Length != 24
        ? BadRequest(new APIResponse<bool>(false, "PUT", "ID not valid"))
-       : Ok(new APIResponse<bool>(await _invoiceService.UpdateDatabaseAsync(id, updatedInvoice), "PUT"));
+       : Ok(new APIResponse<bool>(await _invoiceService.UpdateDatabaseAsync(updatedInvoice._id, updatedInvoice), "PUT"));
    }
 
    /// <summary>
-   /// Delete an <see cref="IInvoiceModel"/> from the database.
+   /// Delete an <see cref="InvoiceModel"/> from the database.
    /// <list type="table">
    ///   <item>
    ///      <term>DELETE</term>
@@ -160,7 +161,7 @@ public class InvoicesController : ControllerBase
    ///   </item>
    /// </list>
    /// </summary>
-   /// <param name="id">The <see cref="ObjectId"/> of the <see cref="IInvoiceModel"/> to delete.</param>
+   /// <param name="id">The <see cref="ObjectId"/> of the <see cref="InvoiceModel"/> to delete.</param>
    /// <returns><see langword="true"/> if successful, otherwise <see langword="false"/></returns>
    [HttpDelete("{id:length(24)}")]
    public async Task<ActionResult<APIResponse<bool>>> Delete(string id)
@@ -175,7 +176,7 @@ public class InvoicesController : ControllerBase
    // DELETE api/Invoices/many
    // Body : string[] ids
    /// <summary>
-   /// Delete multiple <see cref="IInvoiceModel"/>s from the database.
+   /// Delete multiple <see cref="InvoiceModel"/>s from the database.
    /// <list type="table">
    ///   <item>
    ///      <term>DELETE</term>
@@ -188,7 +189,7 @@ public class InvoicesController : ControllerBase
    /// </list>
    /// </summary>
    /// <param name="ids"><see cref="List{T}"/> of <see cref="ObjectId"/>s to delete.</param>
-   /// <returns>Number (<see cref="int"/>) of <see cref="IInvoiceModel"/>s successfully deleted.</returns>
+   /// <returns>Number (<see cref="int"/>) of <see cref="InvoiceModel"/>s successfully deleted.</returns>
    [HttpDelete("many")]
    public async Task<ActionResult<APIResponse<int>>> DeleteMany(string[] ids)
    {
@@ -200,7 +201,7 @@ public class InvoicesController : ControllerBase
    }
 
    /// <summary>
-   /// Parses a DigiKey invoice <see cref="IFormFile"/>, saves the created <see cref="IInvoiceModel"/> to the database and sends the completed <see cref="IInvoiceModel"/> back.
+   /// Parses a DigiKey invoice <see cref="IFormFile"/>, saves the created <see cref="InvoiceModel"/> to the database and sends the completed <see cref="IInvoiceModel"/> back.
    /// <list type="table">
    ///   <item>
    ///      <term>POST</term>
@@ -213,16 +214,16 @@ public class InvoicesController : ControllerBase
    /// </list>
    /// </summary>
    /// <param name="file">The DigiKey invoice file.</param>
-   /// <returns>New <see cref="IInvoiceModel"/>.</returns>
+   /// <returns>New <see cref="InvoiceModel"/>.</returns>
    [HttpPost("files/single")]
-   public async Task<ActionResult<APIResponse<IInvoiceModel?>>> PostParseFile(IFormFile file)
+   public async Task<ActionResult<APIResponse<InvoiceModel?>>> PostParseFile(IFormFile file)
    {
       if (file == null)
-         return BadRequest(new APIResponse<IInvoiceModel?>(null, "POST", "Unable to map file to parameter."));
+         return BadRequest(new APIResponse<InvoiceModel?>(null, "POST", "Unable to map file to parameter."));
       var invoice = await _invoiceService.ParseInvoiceFileAsync(file);
       return invoice == null
-       ? BadRequest(new APIResponse<IInvoiceModel?>(null, "POST", "Returned invoice is null."))
-       : Ok(new APIResponse<IInvoiceModel?>(invoice, "POST", ""));
+       ? BadRequest(new APIResponse<InvoiceModel?>(null, "POST", "Returned invoice is null."))
+       : Ok(new APIResponse<InvoiceModel?>(invoice, "POST", ""));
    }
 
    /// <summary>
@@ -239,16 +240,16 @@ public class InvoicesController : ControllerBase
    /// </list>
    /// </summary>
    /// <param name="files"><see cref="Array"/> of DigiKey invoice files.</param>
-   /// <returns><see cref="Array"/> of new <see cref="IInvoiceModel"/>s.</returns>
+   /// <returns><see cref="Array"/> of new <see cref="InvoiceModel"/>s.</returns>
    [HttpPost("files/many")]
-   public async Task<ActionResult<APIResponse<IEnumerable<IInvoiceModel>?>>> PostParseManyFiles(IEnumerable<IFormFile> files)
+   public async Task<ActionResult<APIResponse<IEnumerable<InvoiceModel>?>>> PostParseManyFiles(IEnumerable<IFormFile> files)
    {
       if (files == null)
-         return BadRequest(new APIResponse<IEnumerable<IInvoiceModel>?>(null, "POST", $"Unable to map files to {nameof(files)} parameter."));
+         return BadRequest(new APIResponse<IEnumerable<InvoiceModel>?>(null, "POST", $"Unable to map files to {nameof(files)} parameter."));
       var invoices = await _invoiceService.ParseInvoiceFilesAsync(files);
       return invoices == null
-       ? BadRequest(new APIResponse<IEnumerable<IInvoiceModel>?>(null, "POST", $"Internal error. Probable file parse issue. Returned invoices are null."))
-       : Ok(new APIResponse<IEnumerable<IInvoiceModel>?>(invoices, "POST"));
+       ? BadRequest(new APIResponse<IEnumerable<InvoiceModel>?>(null, "POST", $"Internal error. Probable file parse issue. Returned invoices are null."))
+       : Ok(new APIResponse<IEnumerable<InvoiceModel>?>(invoices, "POST"));
    }
 
    /// <summary>
@@ -269,7 +270,7 @@ public class InvoicesController : ControllerBase
    /// <param name="file">File to parse.</param>
    /// <returns></returns>
    [HttpPost("files/test")]
-   public async Task<ActionResult<IInvoiceModel?>> PostParseFileTest(IFormFile file)
+   public async Task<ActionResult<InvoiceModel?>> PostParseFileTest(IFormFile file)
    {
       if (file == null)
          return BadRequest("File did not map properly.");

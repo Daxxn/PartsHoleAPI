@@ -1,4 +1,5 @@
-﻿using PartsHoleLib.Interfaces;
+﻿using PartsHoleLib;
+using PartsHoleLib.Interfaces;
 
 namespace PartsHoleAPI.Utils
 {
@@ -14,35 +15,38 @@ namespace PartsHoleAPI.Utils
       public string UsersCollection { get; set; } = null!;
       public string BinsCollection { get; set; } = null!;
       public string InvoicesCollection { get; set; } = null!;
+      public string PartNumberCollection { get; set; } = null!;
 
       public string DevelopmentUserName { get; set; } = null!;
       public string DevelopmentPassword { get; set; } = null!;
       public string ProductionUserName { get; set; } = null!;
       public string ProductionPassword { get; set; } = null!;
 
-      public DatabaseSettings()
-      {
-      }
+      public DatabaseSettings() { }
       #endregion
 
       #region Methods
       public string? GetCollection<T>() where T : IModel
       {
-         if (typeof(T) == typeof(IBinModel))
+         if (typeof(T) == typeof(BinModel))
          {
             return BinsCollection;
          }
-         else if (typeof(T) == typeof(IInvoiceModel))
+         else if (typeof(T) == typeof(InvoiceModel))
          {
             return InvoicesCollection;
          }
-         else if (typeof(T) == typeof(IPartModel))
+         else if (typeof(T) == typeof(PartModel))
          {
             return PartsCollection;
          }
-         else if (typeof(T) == typeof(IUserModel))
+         else if (typeof(T) == typeof(UserModel))
          {
             return UsersCollection;
+         }
+         else if (typeof(T) == typeof(PartNumber))
+         {
+            return PartNumberCollection;
          }
          return null!;
       }

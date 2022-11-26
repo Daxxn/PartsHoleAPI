@@ -1,16 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using PartsHoleLib.Interfaces;
 
-using PartsHoleLib.Interfaces;
+namespace PartsHoleLib;
 
-namespace PartsHoleLib
+public class UserData
 {
-   public class UserData : IUserData
-   {
-      public List<IPartModel> Parts { get; set; } = null!;
-      public List<IInvoiceModel> Invoices { get; set; } = null!;
-   }
+   public List<PartModel> Parts { get; set; } = null!;
+   public List<InvoiceModel> Invoices { get; set; } = null!;
+   public List<BinModel> Bins { get; set; } = null!;
+   public List<PartNumber> PartNumbers { get; set; } = null!;
 }
