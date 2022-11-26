@@ -22,19 +22,16 @@ public class InvoicesController : ControllerBase
 {
    #region Local Props
    private readonly IInvoiceService _invoiceService;
-   private readonly IAbstractFactory<ICSVParser> _parserFactory;
    private readonly ILogger<InvoicesController> _logger;
    #endregion
 
    #region Constructors
    public InvoicesController(
       IInvoiceService invoiceService,
-      ILogger<InvoicesController> logger,
-      IAbstractFactory<ICSVParser> parserFactory)
+      ILogger<InvoicesController> logger)
    {
       _invoiceService = invoiceService;
       _logger = logger;
-      _parserFactory = parserFactory;
    }
    #endregion
 
@@ -51,11 +48,24 @@ public class InvoicesController : ControllerBase
    /// <param name="id"><see cref="ObjectId"/> to search for.</param>
    /// <returns><see cref="IInvoiceModel"/> found. Null if unable.</returns>
    [HttpGet("{id:length(24)}")]
-   public async Task<ActionResult<PartModel?>> Get(string id)
+   public async Task<APIResponse<InvoiceModel>> Get(string id)
    {
-      if (string.IsNullOrEmpty(id))
-         return BadRequest();
-      return Ok(await _invoiceService.GetFromDatabaseAsync(id));
+      try
+      {
+         var foundInvoice = await _invoiceService.GetFromDatabaseAsync(id);
+         if (foundInvoice != null)
+         {
+            _logger.ApiLogInfo("GET", "api/invoices", $"Invoice {id} found.");
+            return new(foundInvoice, "GET");
+         }
+         _logger.ApiLogWarn("GET", "api/invoices", "Invoice not found.");
+         return new("GET", "Invoice not found.");
+      }
+      catch (Exception e)
+      {
+         _logger.ApiLogError("GET", "api/invoices", "Internal Error", e);
+         throw;
+      }
    }
 
    /// <summary>

@@ -55,17 +55,15 @@ public class UserController : ControllerBase
    /// <param name="id">The <see cref="ObjectId"/> of the <see cref="UserModel"/>.</param>
    /// <returns><see cref="UserModel"/> if found. Otherwise null.</returns>
    [HttpGet("{id:length(24)}")]
-   public async Task<ActionResult<UserModel>> Get(string id)
+   public async Task<APIResponse<UserModel>> Get(string id)
    {
-      if (string.IsNullOrEmpty(id))
-      {
-         StatusCode(StatusCodes.Status400BadRequest);
-         return BadRequest(id);
-      }
       var user = await _userService.GetFromDatabaseAsync(id);
-      if (user is null)
-         return NotFound(id);
-      return Ok(user);
+      if (user != null)
+      {
+         _logger.ApiLogInfo("GET", "api/user/{id}", $"User {id} found.");
+         return new(user, "GET");
+      }
+      return new("GET", "Unable to find user.");
    }
 
    /// <summary>
@@ -84,22 +82,22 @@ public class UserController : ControllerBase
    /// <param name="user"><see cref="UserModel"/> to get data for.</param>
    /// <returns><see cref="UserData"/> containing all the <paramref name="user"/> data.</returns>
    [HttpPost("data")]
-   public async Task<ActionResult<APIResponse<UserData?>>> PostGetUserData([FromBody] UserModel user)
+   public async Task<APIResponse<UserData?>> PostGetUserData([FromBody] UserModel user)
    {
       if (user is null)
       {
          _logger.ApiLogWarn("POST", "api/user/data", "Unable to construct user model from body.");
-         return BadRequest(new APIResponse<UserData?>("POST", "No user data found in body."));
+         return new("POST", "No user data found in body.");
       }
-      if (user.Parts is null && user.Invoices is null)
+      if (user.Parts is null && user.Invoices is null && user.Bins is null && user.PartNumbers is null)
       {
          _logger.ApiLogWarn("POST", "api/user/data", "No parts or invoice data found.");
-         return BadRequest(new APIResponse<UserData?>("POST", "User has no data."));
+         return new("POST", "User has no data.");
       }
       var response = await _userService.GetUserDataFromDatabaseAsync(user);
       return response is null
-         ? NotFound(new APIResponse<UserData?>("POST", "No user data found Found"))
-         : Ok(new APIResponse<UserData?>(response, "POST"));
+         ? new("POST", "No user data found Found")
+         : new(response, "POST");
    }
 
    /// <summary>

@@ -32,6 +32,8 @@ public class CollectionService<T> : ICollectionService<T> where T : class, IMode
       var parts = await result.ToListAsync();
       if (parts is null)
          return null;
+      if (parts.Count == 0)
+         return null;
       if (parts.Count > 1)
          throw new Exception("Multiple models found with that ID. Something is horribly wrong!!");
       return parts[0];

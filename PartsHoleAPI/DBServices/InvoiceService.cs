@@ -42,15 +42,17 @@ public class InvoiceService : IInvoiceService
    #region Methods
    public async Task<InvoiceModel?> GetFromDatabaseAsync(string id)
    {
-      var result = await Collection.FindAsync(part => part._id == id);
+      var result = await Collection.FindAsync(invoice => invoice._id == id);
       if (result is null)
          return null;
-      var parts = await result.ToListAsync();
-      if (parts is null)
+      var invoices = await result.ToListAsync();
+      if (invoices is null)
          return null;
-      return parts.Count > 1
+      if (invoices.Count == 0)
+         return null;
+      return invoices.Count > 1
        ? throw new Exception("Multiple invoices found with same ID. Something is horribly wrong!!")
-       : parts[0];
+       : invoices[0];
    }
 
    public async Task<IEnumerable<InvoiceModel>?> GetFromDatabaseAsync(string[] ids)
