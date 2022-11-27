@@ -28,7 +28,7 @@ public class PartNumber : IComparable<PartNumber>, IModel
    };
    public uint Category { get; set; }
    public uint SubCategory { get; set; }
-   public uint ID { get; set; }
+   public uint PartID { get; set; }
    #endregion
 
    #region Constructors
@@ -38,15 +38,22 @@ public class PartNumber : IComparable<PartNumber>, IModel
       Category = category;
       SubCategory = subCategory;
    }
-   public PartNumber(uint category, uint subCategory, uint id)
+   public PartNumber(uint category, uint subCategory, uint partId)
    {
       Category = category;
       SubCategory = subCategory;
-      ID = id;
+      PartID = partId;
    }
    #endregion
 
    #region Methods
+   public static PartNumber CreateTemp(uint fullCategory)
+   {
+      return new()
+      {
+         FullCategory = fullCategory,
+      };
+   }
    public static PartNumber? Parse(string input)
    {
       if (string.IsNullOrEmpty(input))
@@ -68,7 +75,7 @@ public class PartNumber : IComparable<PartNumber>, IModel
          }
          if (uint.TryParse(spl[1], out uint id))
          {
-            newModel.ID = id;
+            newModel.PartID = id;
          }
       }
       return newModel;
@@ -92,11 +99,27 @@ public class PartNumber : IComparable<PartNumber>, IModel
 
    public override int GetHashCode() => base.GetHashCode();
 
-   private double CalcValue() => (Category * Math.Pow(10, 6)) + (SubCategory * Math.Pow(10, 4)) + ID;
-   public override string ToString() => $"{Category:D2}{SubCategory:D2}-{ID:D4}";
+   private double CalcValue() => (Category * Math.Pow(10, 6)) + (SubCategory * Math.Pow(10, 4)) + PartID;
+   public override string ToString() => $"{FullCategory:D4}-{PartID:D4}";
    #endregion
 
    #region Full Props
-   public uint FullCategory => (uint)(Category * Math.Pow(10, 2)) + SubCategory;
+   [BsonIgnore]
+   public uint FullCategory
+   {
+      get => (uint)(Category * Math.Pow(10, 2)) + SubCategory;
+      set
+      {
+         var str = $"{value:D4}";
+         if (uint.TryParse(str.Substring(0, 2), out uint category))
+         {
+            Category = category;
+         }
+         if (uint.TryParse(str.Substring(2, 2), out uint subCategory))
+         {
+            SubCategory = subCategory;
+         }
+      }
+   }
    #endregion
 }

@@ -86,15 +86,10 @@ public class PartNumController : ControllerBase
             _logger.ApiLogInfo("POST", "api/partnums/gen", "User ID not provided.");
             return new APIResponse<PartNumber>("POST", "User ID not provided.");
          }
-         if (requestData.Category is null)
+         if (requestData.FullCategory is 0)
          {
             _logger.ApiLogInfo("POST", "api/partnums/gen", "Part number category not provided.");
             return new APIResponse<PartNumber>("POST", "Part number category not provided.");
-         }
-         if (requestData.SubCategory is null)
-         {
-            _logger.ApiLogInfo("POST", "api/partnums/gen", "Part number sub-category not provided.");
-            return new APIResponse<PartNumber>("POST", "Part number sub-category not provided.");
          }
          var newPartNumber = await _partNumberService.GeneratePartNumberAsync(requestData);
          return newPartNumber is null

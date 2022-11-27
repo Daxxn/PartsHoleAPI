@@ -45,7 +45,7 @@ namespace PartsHoleAPI.DBServices
             (await Collection.FindAsync(pn => foundUser.PartNumbers.Contains(pn._id))).ToEnumerable()
          );
 
-         var newPN = allPartNumbers.New((uint)requestData.Category!, (uint)requestData.SubCategory!);
+         var newPN = allPartNumbers.New(requestData.FullCategory);
          await Collection.InsertOneAsync(newPN);
          await _userService.AppendModelToUserAsync(requestData.UserId, newPN._id, ModelIDSelector.PARTNUMBERS);
          return newPN;
@@ -62,7 +62,7 @@ namespace PartsHoleAPI.DBServices
 
       public async Task<bool> AddToDatabaseAsync(PartNumber data)
       {
-         var foundPNs = (await Collection.FindAsync(p => p.ID == data.ID)).ToList();
+         var foundPNs = (await Collection.FindAsync(p => p.PartID == data.PartID)).ToList();
          if (foundPNs.Any())
          {
             return foundPNs.Count > 1

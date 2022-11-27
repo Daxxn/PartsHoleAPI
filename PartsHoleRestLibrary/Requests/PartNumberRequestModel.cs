@@ -9,7 +9,6 @@ namespace PartsHoleRestLibrary.Requests
    public class PartNumberRequestModel
    {
       public string UserId { get; set; } = null!;
-      public uint? Category { get; set; }
-      public uint? SubCategory { get; set; }
+      public uint FullCategory { get; set; }
    }
 }

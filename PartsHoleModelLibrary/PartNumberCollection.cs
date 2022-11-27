@@ -30,16 +30,16 @@ public class PartNumberCollection : IList<PartNumber>
    public static uint MergeCategory(uint category, uint subCategory) =>
       (uint)(category * Math.Pow(10, 2)) + subCategory;
 
-   public PartNumber New(uint category, uint subCategory)
+   public PartNumber New(uint fullCategory)
    {
-      var newPart = new PartNumber(category, subCategory);
+      var newPartNumber = PartNumber.CreateTemp(fullCategory);
       _parts.Sort();
-      var matchingParts = FindCategory(newPart);
-      var maxID = matchingParts.Any() ? matchingParts.Max(p => p.ID) : 0;
+      var matchingParts = FindCategory(newPartNumber);
+      var maxID = matchingParts.Any() ? matchingParts.Max(p => p.PartID) : 0;
       maxID++;
-      newPart.ID = maxID;
-      Add(newPart);
-      return newPart;
+      newPartNumber.PartID = maxID;
+      Add(newPartNumber);
+      return newPartNumber;
    }
 
    public IEnumerable<PartNumber> FindCategory(uint category, uint subCategory)
