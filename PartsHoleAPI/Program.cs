@@ -38,7 +38,7 @@ public class Program
       #endregion
 
       #region Add Auth0 Authentication to Services
-      //RegisterAuth0(builder);
+      RegisterAuth0(builder);
       #endregion
 
       builder.Services.AddControllers();
@@ -69,6 +69,7 @@ public class Program
       }
 
       app.UseHttpsRedirection();
+      app.UseAuthentication();
       app.UseAuthorization();
       app.MapControllers();
       app.Run();
@@ -84,7 +85,8 @@ public class Program
    private static void RegisterCollectionServices(IServiceCollection Services)
    {
       Services.AddSingleton<IUserService, UserService>();
-      Services.AddSingleton<ICollectionService<PartModel>, CollectionService<PartModel>>();
+      Services.AddSingleton<IPartService, PartService>();
+      //Services.AddSingleton<ICollectionService<PartModel>, CollectionService<PartModel>>();
       Services.AddSingleton<ICollectionService<BinModel>, CollectionService<BinModel>>();
       Services.AddSingleton<IInvoiceService, InvoiceService>();
       Services.AddSingleton<IPartNumberService, PartNumberService>();

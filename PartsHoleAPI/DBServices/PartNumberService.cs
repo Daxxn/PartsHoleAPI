@@ -15,17 +15,19 @@ using PartsHoleRestLibrary.Requests;
 
 namespace PartsHoleAPI.DBServices
 {
-    public class PartNumberService : IPartNumberService
+   public class PartNumberService : IPartNumberService
    {
       #region Local Props
       private readonly IUserService _userService;
+      private readonly IPartService _partsService;
       public IMongoCollection<PartNumber> Collection { get; init; }
       #endregion
 
       #region Constructors
-      public PartNumberService(IOptions<DatabaseSettings> settings, IUserService userService)
+      public PartNumberService(IOptions<DatabaseSettings> settings, IUserService userService, IPartService partsService)
       {
          _userService = userService;
+         _partsService = partsService;
          var client = new MongoClient(settings.Value.ConnectionString);
          var db = client.GetDatabase(settings.Value.DatabaseName);
          Collection = db.GetCollection<PartNumber>(settings.Value.GetCollection<PartNumber>());
@@ -135,8 +137,24 @@ namespace PartsHoleAPI.DBServices
          return successList;
       }
 
-      public async Task<bool> DeleteFromDatabaseAsync(string id) =>
-         (await Collection.DeleteOneAsync(id)).DeletedCount == 1;
+      public async Task<bool> DeleteFromDatabaseAsync(string id)
+      {
+         return (await Collection.DeleteOneAsync(id)).DeletedCount == 1;
+         // Need to add Cookies to make this easier.
+         //var foundPartNumber = await GetFromDatabaseAsync(id);
+         //if (foundPartNumber == null)
+         //   return false;
+         //if ((await Collection.DeleteOneAsync(id)).DeletedCount == 1)
+         //{
+         //   var matchingParts = await _partsService.SearchForParts("Reference", foundPartNumber.ToString());
+         //   if (matchingParts != null)
+         //   {
+         //      matchingParts.ToList().ForEach(part => { part.Reference = null; });
+         //      await _partsService.UpdateDatabaseAsync(matchingParts);
+         //   }
+         //}
+      }
+
       public async Task<int> DeleteFromDatabaseAsync(string[] ids)
       {
          var idList = ids.ToList();

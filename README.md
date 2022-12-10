@@ -1,6 +1,6 @@
 # PartsHoleAPI
 
-An API for managing all communication between the [Client](https://github.com/Daxxn/PartsHoleClient) and the database.
+The API for managing all communication between the [Client](https://github.com/Daxxn/PartsHoleClient) and the database.
 
 # Overview
 
@@ -17,8 +17,8 @@ The need for managing all the parts and tiny components needed for complex PCBs 
 
 ### Future Plans
 
-- Invoice reading directly through [DigiKey](https://www.digikey.com/)
-- Order parts from [DigiKey](https://www.digikey.com/)
+- Invoice reading directly from [DigiKeys API](https://www.digikey.com/)
+- Order parts from [DigiKeys API](https://www.digikey.com/)
 - Parse KiCAD Project/Library files to access to more data (Change part numbers, Update supplier part numbers)
 
 # Installation

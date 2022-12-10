@@ -19,42 +19,33 @@ namespace PartsHoleAPI.Controllers;
 public class UserController : ControllerBase
 {
    private readonly IUserService _userService;
-   private readonly ICollectionService<PartModel> _partsService;
-   private readonly ICollectionService<BinModel> _binService;
-   private readonly IInvoiceService _invoiceService;
    private readonly ILogger<UserController> _logger;
 
    public UserController(
-      ILogger<UserController> logger,
-      IUserService userService,
-      ICollectionService<PartModel> partsService,
-      ICollectionService<BinModel> binService,
-      IInvoiceService invoiceService)
-   {
-      _userService = userService;
-      _partsService = partsService;
-      _binService = binService;
-      _invoiceService = invoiceService;
-      _logger = logger;
-   }
+       ILogger<UserController> logger,
+       IUserService userService)
+    {
+        _userService = userService;
+        _logger = logger;
+    }
 
-   #region API Methods
-   /// <summary>
-   /// Gets an <see cref="UserModel"/> based on the given <see cref="ObjectId"/>.
-   /// <list type="table">
-   ///   <listheader>
-   ///      <term>Method</term>
-   ///      <description>URL</description>
-   ///   </listheader>
-   ///   <item>
-   ///      <term>GET</term>
-   ///      <description>api/user/{<paramref name="id"/>}</description>
-   ///   </item>
-   /// </list>
-   /// </summary>
-   /// <param name="id">The <see cref="ObjectId"/> of the <see cref="UserModel"/>.</param>
-   /// <returns><see cref="UserModel"/> if found. Otherwise null.</returns>
-   [HttpGet("{id:length(24)}")]
+    #region API Methods
+    /// <summary>
+    /// Gets an <see cref="UserModel"/> based on the given <see cref="ObjectId"/>.
+    /// <list type="table">
+    ///   <listheader>
+    ///      <term>Method</term>
+    ///      <description>URL</description>
+    ///   </listheader>
+    ///   <item>
+    ///      <term>GET</term>
+    ///      <description>api/user/{<paramref name="id"/>}</description>
+    ///   </item>
+    /// </list>
+    /// </summary>
+    /// <param name="id">The <see cref="ObjectId"/> of the <see cref="UserModel"/>.</param>
+    /// <returns><see cref="UserModel"/> if found. Otherwise null.</returns>
+    [HttpGet("{id:length(24)}")]
    public async Task<APIResponse<UserModel>> Get(string id)
    {
       var user = await _userService.GetFromDatabaseAsync(id);

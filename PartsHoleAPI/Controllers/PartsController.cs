@@ -17,14 +17,14 @@ namespace PartsHoleAPI.Controllers;
 public class PartsController : ControllerBase
 {
    #region Props
-   private readonly ICollectionService<PartModel> _collection;
+   private readonly IPartService _collection;
    private readonly ILogger<PartsController> _logger;
    #endregion
 
    #region Constructors
    public PartsController(
       ILogger<PartsController> logger,
-      ICollectionService<PartModel> partsCollection
+      IPartService partsCollection
       )
    {
       _collection = partsCollection;

@@ -158,7 +158,13 @@ public class PartNumController : ControllerBase
    {
       try
       {
-         return new(await _partNumberService.DeleteFromDatabaseAsync(id), "DELETE");
+         if (await _partNumberService.DeleteFromDatabaseAsync(id))
+         {
+            _logger.ApiLogInfo("DELETE", "api/partnums/{id}", "Deleted part number from database.");
+            return new(true, "DELETE");
+         }
+         _logger.ApiLogWarn("DELETE", "api/partnums/{id}", $"Unable to delete part number {id} from database.");
+         return new(false, "DELETE", "unable to delete part number.");
       }
       catch (Exception e)
       {

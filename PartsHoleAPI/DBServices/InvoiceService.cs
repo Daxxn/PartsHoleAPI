@@ -6,6 +6,7 @@ using Microsoft.Extensions.Options;
 
 using MongoDB.Bson;
 using MongoDB.Driver;
+
 using PartsHoleAPI.DBServices.Interfaces;
 using PartsHoleAPI.Utils;
 
@@ -32,6 +33,10 @@ public class InvoiceService : IInvoiceService
       {
          IgnoreCase = true,
          IgnoreLineParseErrors = true,
+         ExclusionFunctions = new()
+         {
+            { "Totals-Exclusion", (props) => props.Length == 9 && props[7].ToLower() == "subtotal" }
+         }
       };
       var str = settings.Value.GetCollection<InvoiceModel>();
       var client = new MongoClient(settings.Value.ConnectionString);

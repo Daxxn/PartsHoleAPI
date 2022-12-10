@@ -7,6 +7,7 @@ using PartsHoleRestLibrary.Responses;
 using MongoDB.Bson;
 using PartsHoleAPI.DBServices.Interfaces;
 using PartsHoleAPI.Utils;
+using Microsoft.AspNetCore.Authorization;
 
 namespace PartsHoleAPI.Controllers;
 
