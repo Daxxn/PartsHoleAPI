@@ -1,6 +1,10 @@
 using CSVParserLibrary;
 
+using ExcelParserLibrary;
+
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+
+using OfficeOpenXml;
 
 using PartsHoleAPI.DBServices;
 using PartsHoleAPI.DBServices.Interfaces;
@@ -14,6 +18,8 @@ public class Program
 {
    public static void Main(string[] args)
    {
+      ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+
       var builder = WebApplication.CreateBuilder(args);
 
       #region Add config variables to Services
@@ -80,16 +86,17 @@ public class Program
    {
       Services.AddTransient<ICSVParserOptions, CSVParserOptions>();
       Services.AddAbstractFactory<ICSVParser, CSVParser>();
+      Services.AddAbstractFactory<IExcelParser, ExcelParser>();
    }
 
    private static void RegisterCollectionServices(IServiceCollection Services)
    {
       Services.AddSingleton<IUserService, UserService>();
       Services.AddSingleton<IPartService, PartService>();
-      //Services.AddSingleton<ICollectionService<PartModel>, CollectionService<PartModel>>();
       Services.AddSingleton<ICollectionService<BinModel>, CollectionService<BinModel>>();
       Services.AddSingleton<IInvoiceService, InvoiceService>();
       Services.AddSingleton<IPartNumberService, PartNumberService>();
+      Services.AddSingleton<IMouserParseService, MouserParseService>();
    }
 
    private static void RegisterAuth0(WebApplicationBuilder builder)

@@ -1,6 +1,7 @@
 ﻿using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
+using PartsHoleLib.Enums;
 using PartsHoleLib.Interfaces;
 
 namespace PartsHoleLib;
@@ -10,7 +11,8 @@ public class InvoiceModel : IModel
    [BsonId]
    [BsonRepresentation(BsonType.ObjectId)]
    public string _id { get; set; } = null!;
-   public List<DigiKeyPartModel> Parts { get; set; } = null!;
+   public SupplierType SupplierType { get; set; }
+   public List<InvoicePartModel> Parts { get; set; } = null!;
    public int OrderNumber { get; set; }
 
    public InvoiceModel()

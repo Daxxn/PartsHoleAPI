@@ -18,6 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\CSharpLibraries\ExcelParserLibrary\ExcelParserLibrary\ExcelParserLibrary.csproj" />
     <ProjectReference Include="..\PartsHoleModelLibrary\PartsHoleModelLibrary.csproj" />
     <ProjectReference Include="..\PartsHoleRestLibrary\PartsHoleRestLibrary.csproj" />
   </ItemGroup>

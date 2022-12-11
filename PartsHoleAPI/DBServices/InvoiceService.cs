@@ -11,7 +11,10 @@ using PartsHoleAPI.DBServices.Interfaces;
 using PartsHoleAPI.Utils;
 
 using PartsHoleLib;
+using PartsHoleLib.Enums;
 using PartsHoleLib.Interfaces;
+
+using SixLabors.Fonts.Tables.AdvancedTypographic;
 
 namespace PartsHoleAPI.DBServices;
 
@@ -21,14 +24,20 @@ public class InvoiceService : IInvoiceService
    public IMongoCollection<InvoiceModel> Collection { get; init; }
    private readonly IAbstractFactory<ICSVParser> _parserFactory;
    private readonly ICSVParserOptions _parserOptions;
+   private readonly IMouserParseService _mouserParseService;
+   private readonly ILogger<InvoiceService> _logger;
    #endregion
 
    #region Constructors
    public InvoiceService(
       IOptions<DatabaseSettings> settings,
-      IAbstractFactory<ICSVParser> parserFactory)
+      IAbstractFactory<ICSVParser> parserFactory,
+      IMouserParseService mouserParseService,
+      ILogger<InvoiceService> logger)
    {
       _parserFactory = parserFactory;
+      _mouserParseService = mouserParseService;
+      _logger = logger;
       _parserOptions = new CSVParserOptions()
       {
          IgnoreCase = true,
@@ -41,6 +50,7 @@ public class InvoiceService : IInvoiceService
       var str = settings.Value.GetCollection<InvoiceModel>();
       var client = new MongoClient(settings.Value.ConnectionString);
       Collection = client.GetDatabase(settings.Value.DatabaseName).GetCollection<InvoiceModel>(str);
+      _logger = logger;
    }
    #endregion
 
@@ -145,35 +155,62 @@ public class InvoiceService : IInvoiceService
 
    public async Task<InvoiceModel> ParseInvoiceFileAsync(IFormFile file)
    {
-      if (int.TryParse(Path.GetFileNameWithoutExtension(file.FileName), out var id))
+      var fileExt = Path.GetExtension(file.FileName);
+      InvoiceModel? newInvoice = null;
+      if (fileExt == ".csv")
       {
-         var parser = _parserFactory.Create();
-         var result = await parser.ParseFileAsync<DigiKeyPartModel>(file.OpenReadStream(), _parserOptions);
-         var newInvoice = new InvoiceModel()
+         var result = await ParseDigikeyInvoiceAsync(file);
+         if (result != null)
          {
-            Parts = result.Values.ToList(),
-            OrderNumber = id,
-         };
-         var foundInvoices = (await Collection.FindAsync((inv) => inv.OrderNumber == id)).FirstOrDefault();
-         if (foundInvoices != null)
-         {
-            if ((await Collection.ReplaceOneAsync((inv) => inv.OrderNumber == id, newInvoice)).IsAcknowledged)
+            newInvoice = result.Value.model;
+            if (result.Value.errors != null && result.Value.errors.Any())
             {
-               newInvoice._id = foundInvoices._id;
-               return newInvoice;
+               _logger.LogDebug("{count} Errors during parsing.", result.Value.errors.Count());
             }
-            throw new Exception("Invoice replacement failed. Replace failed to acknowledge.");
-         }
-         else
-         {
-            newInvoice._id = ObjectId.GenerateNewId().ToString();
-            await Collection.InsertOneAsync(newInvoice);
-            return newInvoice;
          }
       }
-      throw new Exception("File name must be the same as the sales order number from DigiKey.");
+      else if (fileExt == ".xls" || fileExt == ".xlsx")
+      {
+         var result = await ParseMouserInvoiceAsync(file);
+         if (result != null)
+         {
+            newInvoice = result.Value.model;
+            if (result.Value.errors != null && result.Value.errors.Any())
+            {
+               _logger.LogDebug("{count} Errors during parsing.", result.Value.errors.Count());
+            }
+         }
+      }
+      if (newInvoice is null)
+      {
+         throw new Exception("Failed to parse invoice.");
+      }
+      var foundInvoices = (await Collection.FindAsync((inv) => inv.OrderNumber == newInvoice.OrderNumber)).FirstOrDefault();
+      if (foundInvoices != null)
+      {
+         if ((await Collection.ReplaceOneAsync((inv) => inv.OrderNumber == newInvoice.OrderNumber, newInvoice)).IsAcknowledged)
+         {
+            newInvoice._id = foundInvoices._id;
+            return newInvoice;
+         }
+         throw new Exception("Invoice replacement failed. Replace failed to acknowledge.");
+      }
+      else
+      {
+         newInvoice._id = ObjectId.GenerateNewId().ToString();
+         await Collection.InsertOneAsync(newInvoice);
+         return newInvoice;
+      }
    }
 
+   /// <summary>
+   /// Need to rethink. It doesnt add to the database.
+   /// <para/>
+   /// Its probably unecessary anyway. I cant get the client to send multiple files.
+   /// </summary>
+   /// <param name="files"></param>
+   /// <returns></returns>
+   /// <exception cref="AggregateException"></exception>
    public async Task<IEnumerable<InvoiceModel>> ParseInvoiceFilesAsync(IEnumerable<IFormFile> files)
    {
       var bag = new ConcurrentBag<InvoiceModel>();
@@ -182,20 +219,32 @@ public class InvoiceService : IInvoiceService
       {
          try
          {
-            if (int.TryParse(Path.GetFileNameWithoutExtension(file.Name), out int orderNum))
+            var fileExt = Path.GetExtension(file.FileName);
+            if (fileExt == ".csv")
             {
-               var parser = _parserFactory.Create();
-               var results = await parser.ParseFileAsync<DigiKeyPartModel>(file.OpenReadStream(), _parserOptions);
-               var newInvoice = new InvoiceModel()
+               var result = await ParseDigikeyInvoiceAsync(file);
+               if (result != null)
                {
-                  OrderNumber = orderNum,
-                  Parts = new(results.Values)
-               };
-               if (results.Errors != null)
-               {
-                  errors.AddRange(results.Errors);
+                  result.Value.model.SupplierType = SupplierType.DigiKey;
+                  bag.Add(result.Value.model);
+                  if (result.Value.errors != null)
+                  {
+                     errors.AddRange(result.Value.errors);
+                  }
                }
-               bag.Add(newInvoice);
+            }
+            else if (fileExt == ".xls" || fileExt == ".xlsx")
+            {
+               var result = await ParseMouserInvoiceAsync(file);
+               if (result != null)
+               {
+                  result.Value.model.SupplierType = SupplierType.Mouser;
+                  bag.Add(result.Value.model);
+                  if (result.Value.errors != null)
+                  {
+                     errors.AddRange(result.Value.errors);
+                  }
+               }
             }
          }
          catch (Exception e)
@@ -204,6 +253,43 @@ public class InvoiceService : IInvoiceService
          }
       });
       return errors.Count == 0 ? bag : throw new AggregateException(errors);
+   }
+
+   private async Task<(InvoiceModel model, IEnumerable<Exception>? errors)?> ParseDigikeyInvoiceAsync(IFormFile file)
+   {
+      if (int.TryParse(Path.GetFileNameWithoutExtension(file.FileName), out int orderNum))
+      {
+         var parser = _parserFactory.Create();
+         var results = await parser.ParseFileAsync<InvoicePartModel>(file.OpenReadStream(), _parserOptions);
+         if (results is null)
+            return null;
+         var newInvoice = new InvoiceModel
+         {
+            OrderNumber = orderNum,
+            SupplierType = SupplierType.DigiKey,
+            Parts = new(results.Values)
+         };
+         return (newInvoice, results.Errors);
+      }
+      return null;
+   }
+
+   private async Task<(InvoiceModel model, IEnumerable<Exception>? errors)?> ParseMouserInvoiceAsync(IFormFile file)
+   {
+      if (int.TryParse(Path.GetFileNameWithoutExtension(file.FileName), out int orderNum))
+      {
+         var results = await _mouserParseService.ParseFileAsync(file);
+         if (results is null)
+            return null;
+         var newInvoice = new InvoiceModel
+         {
+            OrderNumber = orderNum,
+            SupplierType= SupplierType.Mouser,
+            Parts = new(results.Data)
+         };
+         return (newInvoice, results.Errors);
+      }
+      return null;
    }
    #endregion
 
