@@ -17,8 +17,9 @@ The need for managing all the parts and tiny components needed for complex PCBs 
 
 ### Future Plans
 
-- Invoice reading directly from [DigiKeys API](https://www.digikey.com/)
-- Order parts from [DigiKeys API](https://www.digikey.com/)
+- Invoice reading directly from [DigiKey](https://www.digikey.com/) and [Mouaser](https://www.mouser.com/) APIs
+- Order parts from [DigiKeys API](https://www.digikey.com/)and [Mouaser](https://www.mouser.com/)
+- Update the suppliers API when custom part number changes are made (May not be possible, futher research is needed.)
 - Parse KiCAD Project/Library files to access to more data (Change part numbers, Update supplier part numbers)
 
 # Installation
@@ -32,4 +33,5 @@ The database is set up to use [MongoDB Atlas.](https://cloud.mongodb.com) Its th
 ## Other Dependencies
 
 - [CSV Parser Library - Daxxn](https://github.com/Daxxn/CSVParserLibrary-CS)
+- [Excel Parser Library - Daxxn](https://github.com/Daxxn/ExcelParserLibrary)
 

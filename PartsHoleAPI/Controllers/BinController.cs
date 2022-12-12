@@ -114,7 +114,7 @@ public class BinController : ControllerBase
    /// <param name="newBins"><see cref="BinModel"/> array from the message body.</param>
    /// <returns>A matching array of <see cref="bool"/> for each item. (True if successful.)</returns>
    [HttpPost("many")]
-   public async Task<APIResponse<IEnumerable<bool>>> PostMany([FromBody] BinModel[] newBins)
+   public async Task<APIResponse<int>> PostMany([FromBody] BinModel[] newBins)
    {
       try
       {
@@ -125,7 +125,7 @@ public class BinController : ControllerBase
          }
          _logger.ApiLogDebug("POST", "api/bin/many", $"Adding {newBins.Length} to the database.");
          var results = await _collection.AddToDatabaseAsync(newBins);
-         if (results is null)
+         if (results == 0)
          {
             _logger.ApiLogWarn("POST", "api/bin/many", "Unable to create Bins.");
             return new("POST", "Unable to create Bins.");

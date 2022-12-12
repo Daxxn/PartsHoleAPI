@@ -15,22 +15,25 @@ using PartsHoleRestLibrary.Requests;
 
 namespace PartsHoleAPI.DBServices
 {
-   public class PartNumberService : IPartNumberService
+   public class PartNumberService : CollectionService<PartNumber>, IPartNumberService
    {
       #region Local Props
       private readonly IUserService _userService;
       private readonly IPartService _partsService;
-      public IMongoCollection<PartNumber> Collection { get; init; }
       #endregion
 
       #region Constructors
-      public PartNumberService(IOptions<DatabaseSettings> settings, IUserService userService, IPartService partsService)
+      public PartNumberService(
+         IOptions<DatabaseSettings> settings,
+         IUserService userService,
+         IPartService partsService
+         ) : base(settings)
       {
          _userService = userService;
          _partsService = partsService;
-         var client = new MongoClient(settings.Value.ConnectionString);
-         var db = client.GetDatabase(settings.Value.DatabaseName);
-         Collection = db.GetCollection<PartNumber>(settings.Value.GetCollection<PartNumber>());
+         //var client = new MongoClient(settings.Value.ConnectionString);
+         //var db = client.GetDatabase(settings.Value.DatabaseName);
+         //Collection = db.GetCollection<PartNumber>(settings.Value.GetCollection<PartNumber>());
       }
       #endregion
 
@@ -53,29 +56,20 @@ namespace PartsHoleAPI.DBServices
          return newPN;
       }
       #endregion
-
-      public async Task<PartNumber?> GetFromDatabaseAsync(string id) =>
-         (await Collection.FindAsync(pn => pn.Id == id)).FirstOrDefault();
-      public async Task<IEnumerable<PartNumber>?> GetFromDatabaseAsync(string[] ids)
-      {
-         var idList = ids.ToList();
-         return (await Collection.FindAsync(pn => idList.Contains(pn.Id))).ToEnumerable();
-      }
-
-      public async Task<bool> AddToDatabaseAsync(PartNumber data)
-      {
-         var foundPNs = (await Collection.FindAsync(p => p.PartID == data.PartID)).ToList();
-         if (foundPNs.Any())
-         {
-            return foundPNs.Count > 1
-               ? throw new DatabaseDesyncException("More than one ID found in SupplierPartNumber database.", foundPNs.Select(x => x.ToString()))
-               : false;
-         }
-         data.Id ??= ObjectId.GenerateNewId().ToString();
-         await Collection.InsertOneAsync(data);
-         return true;
-      }
-      public async Task<IEnumerable<bool>?> AddToDatabaseAsync(IEnumerable<PartNumber> data)
+      //public async Task<bool> AddToDatabaseAsync(PartNumber data)
+      //{
+      //   var foundPNs = (await Collection.FindAsync(p => p.PartID == data.PartID)).ToList();
+      //   if (foundPNs.Any())
+      //   {
+      //      return foundPNs.Count > 1
+      //         ? throw new DatabaseDesyncException("More than one ID found in SupplierPartNumber database.", foundPNs.Select(x => x.ToString()))
+      //         : false;
+      //   }
+      //   data.Id ??= ObjectId.GenerateNewId().ToString();
+      //   await Collection.InsertOneAsync(data);
+      //   return true;
+      //}
+      public async new Task<IEnumerable<bool>?> AddToDatabaseAsync(IEnumerable<PartNumber> data)
       {
          var dataList = data.ToList();
          var numbers = dataList.Select(x => x.ToString());
@@ -110,56 +104,57 @@ namespace PartsHoleAPI.DBServices
          return successList;
       }
 
-      public async Task<bool> UpdateDatabaseAsync(string id, PartNumber data)
-      {
-         if ((await Collection.FindAsync(pn => pn.Id == id)).FirstOrDefault() != null)
-         {
-            var result = await Collection.ReplaceOneAsync((pn) => pn.Id == id, data);
-            return result.ModifiedCount == 1;
-         }
-         return false;
-      }
-      public async Task<IEnumerable<bool>?> UpdateDatabaseAsync(IEnumerable<PartNumber> data)
-      {
-         var dataList = data.ToList();
-         List<bool> successList = new(dataList.Count);
+      //public async Task<bool> UpdateDatabaseAsync(string id, PartNumber data)
+      //{
+      //   if ((await Collection.FindAsync(pn => pn.Id == id)).FirstOrDefault() != null)
+      //   {
+      //      var result = await Collection.ReplaceOneAsync((pn) => pn.Id == id, data);
+      //      return result.ModifiedCount == 1;
+      //   }
+      //   return false;
+      //}
 
-         await Parallel.ForEachAsync(dataList, async (d, token) =>
-         {
-            var result = await Collection.ReplaceOneAsync(pn => pn.Id == d.Id, d, cancellationToken: token);
-            var index = dataList.IndexOf(d);
-            if (result.ModifiedCount == 1)
-            {
-               successList.Insert(index, true);
-            }
-            successList.Insert(index, false);
-         });
-         return successList;
-      }
+      //public async Task<IEnumerable<bool>?> UpdateDatabaseAsync(IEnumerable<PartNumber> data)
+      //{
+      //   var dataList = data.ToList();
+      //   List<bool> successList = new(dataList.Count);
 
-      public async Task<bool> DeleteFromDatabaseAsync(string id)
-      {
-         return (await Collection.DeleteOneAsync(id)).DeletedCount == 1;
-         // Need to add Cookies to make this easier.
-         //var foundPartNumber = await GetFromDatabaseAsync(id);
-         //if (foundPartNumber == null)
-         //   return false;
-         //if ((await Collection.DeleteOneAsync(id)).DeletedCount == 1)
-         //{
-         //   var matchingParts = await _partsService.SearchForParts("Reference", foundPartNumber.ToString());
-         //   if (matchingParts != null)
-         //   {
-         //      matchingParts.ToList().ForEach(part => { part.Reference = null; });
-         //      await _partsService.UpdateDatabaseAsync(matchingParts);
-         //   }
-         //}
-      }
+      //   await Parallel.ForEachAsync(dataList, async (d, token) =>
+      //   {
+      //      var result = await Collection.ReplaceOneAsync(pn => pn.Id == d.Id, d, cancellationToken: token);
+      //      var index = dataList.IndexOf(d);
+      //      if (result.ModifiedCount == 1)
+      //      {
+      //         successList.Insert(index, true);
+      //      }
+      //      successList.Insert(index, false);
+      //   });
+      //   return successList;
+      //}
 
-      public async Task<int> DeleteFromDatabaseAsync(string[] ids)
-      {
-         var idList = ids.ToList();
-         return (int)(await Collection.DeleteManyAsync((pn) => idList.Contains(pn.Id))).DeletedCount;
-      }
+      //public async Task<bool> DeleteFromDatabaseAsync(string id)
+      //{
+      //   return (await Collection.DeleteOneAsync(id)).DeletedCount == 1;
+      //   // Need to add Cookies to make this easier.
+      //   //var foundPartNumber = await GetFromDatabaseAsync(id);
+      //   //if (foundPartNumber == null)
+      //   //   return false;
+      //   //if ((await Collection.DeleteOneAsync(id)).DeletedCount == 1)
+      //   //{
+      //   //   var matchingParts = await _partsService.SearchForParts("Reference", foundPartNumber.ToString());
+      //   //   if (matchingParts != null)
+      //   //   {
+      //   //      matchingParts.ToList().ForEach(part => { part.Reference = null; });
+      //   //      await _partsService.UpdateDatabaseAsync(matchingParts);
+      //   //   }
+      //   //}
+      //}
+
+      //public async Task<int> DeleteFromDatabaseAsync(string[] ids)
+      //{
+      //   var idList = ids.ToList();
+      //   return (int)(await Collection.DeleteManyAsync((pn) => idList.Contains(pn.Id))).DeletedCount;
+      //}
       #endregion
 
       #region Full Props

@@ -44,6 +44,8 @@ public class InvoicePartModel
    [CSVProperty("UNIT PRICE")]
    [ExcelProperty("Price (USD)")]
    public decimal UnitPrice { get; set; }
+
+   public bool AddToInventory { get; set; }
    #endregion
 
    #region Constructors

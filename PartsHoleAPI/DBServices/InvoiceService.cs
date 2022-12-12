@@ -22,10 +22,9 @@ using SixLabors.Fonts.Tables.AdvancedTypographic;
 
 namespace PartsHoleAPI.DBServices;
 
-public class InvoiceService : IInvoiceService
+public class InvoiceService : CollectionService<InvoiceModel>, IInvoiceService
 {
    #region Local Props
-   public IMongoCollection<InvoiceModel> Collection { get; init; }
    private readonly IAbstractFactory<ICSVParser> _parserFactory;
    private readonly ICSVParserOptions _csvParserOptions;
    private readonly ExcelParserOptions _excelParserOptions;
@@ -38,7 +37,7 @@ public class InvoiceService : IInvoiceService
       IOptions<DatabaseSettings> settings,
       IAbstractFactory<ICSVParser> parserFactory,
       IMouserParseService mouserParseService,
-      ILogger<InvoiceService> logger)
+      ILogger<InvoiceService> logger) : base(settings)
    {
       _parserFactory = parserFactory;
       _mouserParseService = mouserParseService;
@@ -56,9 +55,6 @@ public class InvoiceService : IInvoiceService
       {
          IgnorePropertyErrors = true,
       };
-      var str = settings.Value.GetCollection<InvoiceModel>();
-      var client = new MongoClient(settings.Value.ConnectionString);
-      Collection = client.GetDatabase(settings.Value.DatabaseName).GetCollection<InvoiceModel>(str);
       _logger = logger;
    }
    #endregion
@@ -130,7 +126,7 @@ public class InvoiceService : IInvoiceService
       if (result.FirstOrDefault() is null)
          return await AddToDatabaseAsync(data);
       var replaceResult = await Collection.ReplaceOneAsync(filter, data);
-      return replaceResult is null ? false : replaceResult.ModifiedCount > 0;
+      return replaceResult is null ? false : replaceResult.MatchedCount == 1;
 
    }
 

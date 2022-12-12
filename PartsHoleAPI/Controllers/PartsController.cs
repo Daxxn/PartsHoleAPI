@@ -153,7 +153,7 @@ public class PartsController : ControllerBase
    /// <param name="newParts"><see cref="List{T}"/> of new <see cref="PartModel"/>s to create.</param>
    /// <returns><see cref="List{T}"/> of <see cref="bool"/>s where; <see langword="true"/> if successful, otherwise <see langword="false"/>.</returns>
    [HttpPost("many")]
-   public async Task<APIResponse<IEnumerable<bool>>> PostMany([FromBody] PartModel[] newParts)
+   public async Task<APIResponse<int>> PostMany([FromBody] PartModel[] newParts)
    {
       try
       {
@@ -163,7 +163,7 @@ public class PartsController : ControllerBase
             return new("POST", "Body is null.");
          }
          var successList = await _collection.AddToDatabaseAsync(newParts);
-         if (successList != null)
+         if (successList == 0)
          {
             _logger.ApiLogInfo("POST", "api/parts/many", $"Successfully added {newParts.Length} parts to database.");
             return new(successList, "POST");
@@ -239,7 +239,7 @@ public class PartsController : ControllerBase
    /// <param name="updatedParts"><see cref="List{T}"/> of <see cref="PartModel"/>s to update.</param>
    /// <returns><see cref="List{T}"/> of <see cref="bool"/>s according to the index where; <see langword="true"/> if successful, otherwise <see langword="false"/>.</returns>
    [HttpPut("many")]
-   public async Task<APIResponse<IEnumerable<bool>>> PutMany([FromBody] PartModel[] updatedParts)
+   public async Task<APIResponse<int>> PutMany([FromBody] PartModel[] updatedParts)
    {
       try
       {
@@ -254,7 +254,7 @@ public class PartsController : ControllerBase
             return new("PUT", "No parts found in request body.");
          }
          var successList = await _collection.UpdateDatabaseAsync(updatedParts);
-         if (successList is null)
+         if (successList == 0)
          {
             _logger.ApiLogWarn("PUT", "api/parts/many", "Unable to update parts.");
             return new("PUT", "Unable to update parts.");

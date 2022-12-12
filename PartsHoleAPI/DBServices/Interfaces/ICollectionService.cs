@@ -17,7 +17,7 @@ public interface ICollectionService<T> : IModelService<T>
     /// </summary>
     /// <param name="data">Models to create</param>
     /// <returns><see cref="List{T}"/> of <see cref="bool"/> representing successfull model creation.</returns>
-    Task<IEnumerable<bool>?> AddToDatabaseAsync(IEnumerable<T> data);
+    Task<int> AddToDatabaseAsync(IEnumerable<T> data);
 
     /// <summary>
     /// Updates <paramref name="data"/> models in the database.
@@ -25,7 +25,7 @@ public interface ICollectionService<T> : IModelService<T>
     /// </summary>
     /// <param name="data">Models to update</param>
     /// <returns><see cref="List{T}"/> of <see cref="bool"/> representing successfull model creation.</returns>
-    Task<IEnumerable<bool>?> UpdateDatabaseAsync(IEnumerable<T> data);
+    Task<int> UpdateDatabaseAsync(IEnumerable<T> data);
 
     /// <summary>
     /// Removes models from the database by <see cref="ObjectId"/>.

@@ -121,7 +121,7 @@ public class InvoicesController : ControllerBase
    /// <param name="newInvoices"><see cref="List{T}"/> of new <see cref="InvoiceModel"/>s to create.</param>
    /// <returns><see cref="List{T}"/> of <see cref="bool"/>s where; <see langword="true"/> if successful, otherwise <see langword="false"/>.</returns>
    [HttpPost("many")]
-   public async Task<APIResponse<IEnumerable<bool>?>> PostMany([FromBody] InvoiceModel[] newInvoices)
+   public async Task<APIResponse<int>> PostMany([FromBody] InvoiceModel[] newInvoices)
    {
       try
       {
@@ -131,12 +131,12 @@ public class InvoicesController : ControllerBase
             return new("POST", "Invoices are null.");
          }
          var response = await _invoiceService.AddToDatabaseAsync(newInvoices);
-         if (response is null)
+         if (response == 0)
          {
             _logger.ApiLogWarn("POST", "api/invoices/many", "Database did not return any data.");
             return new("POST", "Database did not respond.");
          }
-         _logger.ApiLogInfo("POST", "api/invoices/many", $"{response.Count()} invoices created.");
+         _logger.ApiLogInfo("POST", "api/invoices/many", $"{response} invoices created.");
          return new(response, "POST");
       }
       catch (Exception e)

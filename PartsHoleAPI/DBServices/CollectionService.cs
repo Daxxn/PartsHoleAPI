@@ -1,4 +1,6 @@
-﻿using Microsoft.Extensions.Options;
+﻿using System.Collections.Concurrent;
+
+using Microsoft.Extensions.Options;
 
 using MongoDB.Driver;
 using PartsHoleAPI.DBServices.Interfaces;
@@ -56,25 +58,16 @@ public class CollectionService<T> : ICollectionService<T> where T : class, IMode
       return false;
    }
 
-   public async Task<IEnumerable<bool>?> AddToDatabaseAsync(IEnumerable<T> data)
+   public async Task<int> AddToDatabaseAsync(IEnumerable<T> data)
    {
-      var partData = data.ToList();
-      var status = new List<bool>(partData.Count);
-      var ids = data.Select(x => x.Id).ToList();
-      var result = await Collection.FindAsync(part => ids.Contains(part.Id));
-      if (result is null)
-         return null;
-      if (result.ToList().Count > 0)
-         return null;
-      await Parallel.ForEachAsync(data, async (part, token) =>
+      var bag = new ConcurrentBag<bool>();
+      await Parallel.ForEachAsync(data, async (model, token) =>
       {
          if (token.IsCancellationRequested)
             return;
-         var success = await AddToDatabaseAsync(part);
-         var index = partData.IndexOf(part);
-         status.Insert(index, success);
+         bag.Add(await AddToDatabaseAsync(model));
       });
-      return status;
+      return bag.Sum(x => x ? 1 : 0);
    }
 
    public async Task<bool> UpdateDatabaseAsync(string id, T data)
@@ -87,33 +80,18 @@ public class CollectionService<T> : ICollectionService<T> where T : class, IMode
       return replaceResult is null ? false : replaceResult.ModifiedCount > 0;
    }
 
-   public async Task<IEnumerable<bool>?> UpdateDatabaseAsync(IEnumerable<T> data)
+   public async Task<int> UpdateDatabaseAsync(IEnumerable<T> data)
    {
-      var partData = data.ToList();
-      var results = new List<bool>(partData.Count);
+      //await Collection.InsertManyAsync(data);
+      //return data.Count();
+      var updateCount = 0;
       await Parallel.ForEachAsync(data, async (d, token) =>
       {
          if (token.IsCancellationRequested)
             return;
-         var success = false;
-         if (!string.IsNullOrEmpty(d.Id))
-         {
-            success = await UpdateDatabaseAsync(d.Id, d);
-         }
-         var index = partData.IndexOf(d);
-         results.Insert(index, success);
+         updateCount += await UpdateDatabaseAsync(d.Id, d) ? 1 : 0;
       });
-      //foreach (var d in partData)
-      //{
-      //   var success = false;
-      //   if (!string.IsNullOrEmpty(d.Id))
-      //   {
-      //      success = await UpdateDatabaseAsync(d.Id, d);
-      //   }
-      //   var index = partData.IndexOf(d);
-      //   results.Insert(index, success);
-      //}
-      return results;
+      return updateCount;
    }
 
    public async Task<bool> DeleteFromDatabaseAsync(string id)
