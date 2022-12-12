@@ -26,7 +26,7 @@ public class CollectionService<T> : ICollectionService<T> where T : class, IMode
    #region Methods
    public async Task<T?> GetFromDatabaseAsync(string id)
    {
-      var result = await Collection.FindAsync(part => part._id == id);
+      var result = await Collection.FindAsync(part => part.Id == id);
       if (result is null)
          return null;
       var parts = await result.ToListAsync();
@@ -41,13 +41,13 @@ public class CollectionService<T> : ICollectionService<T> where T : class, IMode
 
    public async Task<IEnumerable<T>?> GetFromDatabaseAsync(string[] ids)
    {
-      var result = await Collection.FindAsync(part => ids.Contains(part._id));
+      var result = await Collection.FindAsync(part => ids.Contains(part.Id));
       return result is null ? null : result.ToEnumerable();
    }
 
    public async Task<bool> AddToDatabaseAsync(T data)
    {
-      var filter = Builders<T>.Filter.Eq("Id", data._id);
+      var filter = Builders<T>.Filter.Eq("Id", data.Id);
       if (await Collection.Find(filter).FirstOrDefaultAsync() is null)
       {
          await Collection.InsertOneAsync(data);
@@ -60,8 +60,8 @@ public class CollectionService<T> : ICollectionService<T> where T : class, IMode
    {
       var partData = data.ToList();
       var status = new List<bool>(partData.Count);
-      var ids = data.Select(x => x._id).ToList();
-      var result = await Collection.FindAsync(part => ids.Contains(part._id));
+      var ids = data.Select(x => x.Id).ToList();
+      var result = await Collection.FindAsync(part => ids.Contains(part.Id));
       if (result is null)
          return null;
       if (result.ToList().Count > 0)
@@ -79,7 +79,7 @@ public class CollectionService<T> : ICollectionService<T> where T : class, IMode
 
    public async Task<bool> UpdateDatabaseAsync(string id, T data)
    {
-      var filter = Builders<T>.Filter.Where(x => id == x._id);
+      var filter = Builders<T>.Filter.Where(x => id == x.Id);
       var result = await Collection.FindAsync(filter);
       if (result is null) throw new Exception("Find failed.");
       if (result.FirstOrDefault() is null) return await AddToDatabaseAsync(data);
@@ -96,9 +96,9 @@ public class CollectionService<T> : ICollectionService<T> where T : class, IMode
          if (token.IsCancellationRequested)
             return;
          var success = false;
-         if (!string.IsNullOrEmpty(d._id))
+         if (!string.IsNullOrEmpty(d.Id))
          {
-            success = await UpdateDatabaseAsync(d._id, d);
+            success = await UpdateDatabaseAsync(d.Id, d);
          }
          var index = partData.IndexOf(d);
          results.Insert(index, success);
@@ -106,9 +106,9 @@ public class CollectionService<T> : ICollectionService<T> where T : class, IMode
       //foreach (var d in partData)
       //{
       //   var success = false;
-      //   if (!string.IsNullOrEmpty(d._id))
+      //   if (!string.IsNullOrEmpty(d.Id))
       //   {
-      //      success = await UpdateDatabaseAsync(d._id, d);
+      //      success = await UpdateDatabaseAsync(d.Id, d);
       //   }
       //   var index = partData.IndexOf(d);
       //   results.Insert(index, success);
@@ -118,13 +118,13 @@ public class CollectionService<T> : ICollectionService<T> where T : class, IMode
 
    public async Task<bool> DeleteFromDatabaseAsync(string id)
    {
-      var result = await Collection.DeleteOneAsync((p) => p._id == id);
+      var result = await Collection.DeleteOneAsync((p) => p.Id == id);
       return result is not null && result.DeletedCount > 0;
    }
 
    public async Task<int> DeleteFromDatabaseAsync(string[] ids)
    {
-      var result = await Collection.DeleteManyAsync((p) => ids.Contains(p._id));
+      var result = await Collection.DeleteManyAsync((p) => ids.Contains(p.Id));
       return result is null ? 0 : (int)result.DeletedCount;
    }
    #endregion

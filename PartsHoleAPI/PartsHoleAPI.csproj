@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <PackageReference Include="CSVParserLibrary" Version="1.1.0" />
+    <PackageReference Include="ExcelParserLibrary" Version="1.0.2" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="6.0.10" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.17.0" />
     <PackageReference Include="MongoDB.Driver" Version="2.18.0" />

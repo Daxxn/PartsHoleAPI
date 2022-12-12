@@ -10,7 +10,7 @@ public class PartModel : IModel
    #region Local
    [BsonId]
    [BsonRepresentation(BsonType.ObjectId)]
-   public string _id { get; set; } = null!;
+   public string Id { get; set; } = null!;
    public string SupplierPartNumber { get; set; } = null!;
    public string PartNumber { get; set; } = null!;
    public string? Description { get; set; }
@@ -35,6 +35,7 @@ public class PartModel : IModel
    #endregion
 
    #region Full Props
+   [BsonIgnore]
    public decimal ExtendedPrice => Quantity * UnitPrice;
    #endregion
 }

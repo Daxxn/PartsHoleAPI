@@ -114,7 +114,7 @@ public class UserController : ControllerBase
          _logger.ApiLogWarn("POST", "api/user", "Unable to construct user model from body.");
          return BadRequest(new APIResponse<bool>(false, "POST", "Unable to construct user model from body."));
       }
-      if (string.IsNullOrEmpty(newUser._id))
+      if (string.IsNullOrEmpty(newUser.Id))
       {
          _logger.ApiLogWarn("POST", "api/user", "User model has no valid ID.");
          return BadRequest(new APIResponse<bool>(false, "POST", "User model has no valid ID."));
@@ -205,12 +205,12 @@ public class UserController : ControllerBase
 
       try
       {
-         if (await _userService.UpdateDatabaseAsync(updatedUser._id, updatedUser))
+         if (await _userService.UpdateDatabaseAsync(updatedUser.Id, updatedUser))
          {
-            _logger.ApiLogInfo("PUT", "api/user", $"Successfully updated user {updatedUser._id}");
+            _logger.ApiLogInfo("PUT", "api/user", $"Successfully updated user {updatedUser.Id}");
             return Ok(new APIResponse<bool>(true, "PUT"));
          }
-         _logger.ApiLogWarn("PUT", "api/user", $"Unable to update user {updatedUser._id}");
+         _logger.ApiLogWarn("PUT", "api/user", $"Unable to update user {updatedUser.Id}");
          return BadRequest(new APIResponse<bool>(false, "PUT"));
       }
       catch (Exception e)

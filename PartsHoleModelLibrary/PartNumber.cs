@@ -11,7 +11,7 @@ public class PartNumber : IComparable<PartNumber>, IModel
    #region Local Props
    [BsonId]
    [BsonRepresentation(BsonType.ObjectId)]
-   public string _id { get; set; } = ObjectId.GenerateNewId().ToString();
+   public string Id { get; set; } = ObjectId.GenerateNewId().ToString();
    public static Dictionary<PartNumberType, PartNumberSubTypes[]> SubTypeDisplay = new()
    {
       { PartNumberType.Passives, new PartNumberSubTypes[] { PartNumberSubTypes.Resistor, PartNumberSubTypes.capacitor, PartNumberSubTypes.Inductor, PartNumberSubTypes.Ferrites, PartNumberSubTypes.Crystal, PartNumberSubTypes.Resonator } },

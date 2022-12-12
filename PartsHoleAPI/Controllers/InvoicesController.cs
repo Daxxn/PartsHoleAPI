@@ -13,6 +13,7 @@ using PartsHoleAPI.Utils;
 using PartsHoleLib;
 using PartsHoleLib.Interfaces;
 
+using PartsHoleRestLibrary.Requests;
 using PartsHoleRestLibrary.Responses;
 
 namespace PartsHoleAPI.Controllers;
@@ -170,22 +171,22 @@ public class InvoicesController : ControllerBase
             _logger.ApiLogWarn("PUT", "api/invoices", "Body is null.");
             return new(false, "PUT", "Method body not found");
          }
-         if (string.IsNullOrEmpty(updatedInvoice._id))
+         if (string.IsNullOrEmpty(updatedInvoice.Id))
          {
             _logger.ApiLogWarn("PUT", "api/invoices", "Invoice ID is null.");
             return new(false, "PUT", "ID not found");
          }
-         if (updatedInvoice._id.Length != 24)
+         if (updatedInvoice.Id.Length != 24)
          {
             _logger.ApiLogWarn("PUT", "api/invoices", "Invoice ID is not valid.");
             return new(false, "PUT", "Invoice ID is not valid.");
          }
-         if (await _invoiceService.UpdateDatabaseAsync(updatedInvoice._id, updatedInvoice))
+         if (await _invoiceService.UpdateDatabaseAsync(updatedInvoice.Id, updatedInvoice))
          {
-            _logger.ApiLogInfo("PUT", "api/invoices", $"Invoice {updatedInvoice._id} updated.");
+            _logger.ApiLogInfo("PUT", "api/invoices", $"Invoice {updatedInvoice.Id} updated.");
             return new(true, "PUT");
          }
-         _logger.ApiLogWarn("PUT", "api/invoices", $"Failed to update invoice {updatedInvoice._id}.");
+         _logger.ApiLogWarn("PUT", "api/invoices", $"Failed to update invoice {updatedInvoice.Id}.");
          return new(false, "PUT", "Unable to update invoice.");
       }
       catch (Exception e)

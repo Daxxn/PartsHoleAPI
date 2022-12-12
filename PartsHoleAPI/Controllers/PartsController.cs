@@ -153,7 +153,7 @@ public class PartsController : ControllerBase
    /// <param name="newParts"><see cref="List{T}"/> of new <see cref="PartModel"/>s to create.</param>
    /// <returns><see cref="List{T}"/> of <see cref="bool"/>s where; <see langword="true"/> if successful, otherwise <see langword="false"/>.</returns>
    [HttpPost("many")]
-   public async Task<APIResponse<IEnumerable<bool>?>> PostMany([FromBody] PartModel[] newParts)
+   public async Task<APIResponse<IEnumerable<bool>>> PostMany([FromBody] PartModel[] newParts)
    {
       try
       {
@@ -198,19 +198,19 @@ public class PartsController : ControllerBase
    {
       try
       {
-         if (string.IsNullOrEmpty(updatedPart._id))
+         if (string.IsNullOrEmpty(updatedPart.Id))
          {
             _logger.ApiLogWarn("PUT", "api/parts", "Updated part ID was null.");
             return new(false, "PUT", "Updated part ID is null.");
          }
-         if (updatedPart._id.Length != 24)
+         if (updatedPart.Id.Length != 24)
          {
             _logger.ApiLogWarn("PUT", "api/parts", "Unable to validate updated part ID.");
             return new(false, "PUT", "ID not valid.");
          }
-         if (await _collection.UpdateDatabaseAsync(updatedPart._id, updatedPart))
+         if (await _collection.UpdateDatabaseAsync(updatedPart.Id, updatedPart))
          {
-            _logger.ApiLogInfo("PUT", "api/parts", $"Successfully updated part {updatedPart._id}");
+            _logger.ApiLogInfo("PUT", "api/parts", $"Successfully updated part {updatedPart.Id}");
             return new(true, "PUT");
          }
          _logger.ApiLogWarn("PUT", "api/parts", "Unable to updated part model.");

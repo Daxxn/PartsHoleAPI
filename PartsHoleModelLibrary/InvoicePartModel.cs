@@ -1,49 +1,63 @@
-﻿using CSVParserLibrary.Models;
+﻿using System.Text.Json.Serialization;
+
+using CSVParserLibrary.Models;
+
+using ExcelParserLibrary.Models;
 
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
 namespace PartsHoleLib;
 
-public class DigiKeyPartModel
+public class InvoicePartModel
 {
    #region Local Props
    [BsonId]
    [BsonRepresentation(BsonType.ObjectId)]
+   [ExcelIgnore]
    public string Id { get; set; } = null!;
 
    [CSVProperty("QUANTITY")]
+   [ExcelProperty("Order Qty.")]
    public int Quantity { get; set; }
 
    [CSVProperty("PART NUMBER")]
-   public string PartNumber { get; set; } = null!;
+   [ExcelProperty("Mouser #:")]
+   public string SupplierPartNumber { get; set; } = null!;
 
    [CSVProperty("MANUFACTURER PART NUMBER")]
-   public string ManufacturerPartNumber { get; set; } = null!;
+   [ExcelProperty("Mfr. #:")]
+   public string PartNumber { get; set; } = null!;
 
    [CSVProperty("DESCRIPTION")]
+   [ExcelProperty("Desc.:")]
    public string Description { get; set; } = null!;
 
    [CSVProperty("CUSTOMER REFERENCE")]
-   public string CustomerReference { get; set; } = null!;
+   [ExcelProperty("Customer #")]
+   public string? Reference { get; set; }
 
    [CSVProperty("BACKORDER")]
+   [ExcelIgnore]
    public int Backorder { get; set; }
 
    [CSVProperty("UNIT PRICE")]
+   [ExcelProperty("Price (USD)")]
    public decimal UnitPrice { get; set; }
    #endregion
 
    #region Constructors
-   public DigiKeyPartModel() => Id = ObjectId.GenerateNewId().ToString();
+   public InvoicePartModel() => Id = ObjectId.GenerateNewId().ToString();
    #endregion
 
    #region Methods
    public override string ToString() =>
-      $"{(Id is null ? "" : "'ID'")} {ManufacturerPartNumber} {PartNumber} {CustomerReference} {Quantity} {UnitPrice} {Description}";
+      $"{(Id is null ? "" : "'ID'")} {PartNumber} {SupplierPartNumber} {Reference} {Quantity} {UnitPrice} {Description}";
    #endregion
 
    #region Other Props
+   [ExcelIgnore]
+   [JsonIgnore]
    public decimal ExtendedPrice => UnitPrice * Quantity;
    #endregion
 }

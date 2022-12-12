@@ -165,13 +165,13 @@ public class BinController : ControllerBase
             _logger.ApiLogWarn("PUT", "api/bin", "Body not found.");
             return new(false, "PUT", "Body not found.");
          }
-         if (await _collection.UpdateDatabaseAsync(updatedBin._id, updatedBin))
+         if (await _collection.UpdateDatabaseAsync(updatedBin.Id, updatedBin))
          {
-            _logger.ApiLogInfo("PUT", "api/bin", $"Successfuly updated bin {updatedBin._id}");
+            _logger.ApiLogInfo("PUT", "api/bin", $"Successfuly updated bin {updatedBin.Id}");
             return new(true, "PUT");
          }
-         _logger.ApiLogWarn("PUT", "api/bin", $"Unable to update bin {updatedBin._id}");
-         return new(false, "PUT", $"Unable to update bin {updatedBin._id}");
+         _logger.ApiLogWarn("PUT", "api/bin", $"Unable to update bin {updatedBin.Id}");
+         return new(false, "PUT", $"Unable to update bin {updatedBin.Id}");
       }
       catch (Exception e)
       {

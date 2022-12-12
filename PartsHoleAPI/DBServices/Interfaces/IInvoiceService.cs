@@ -1,5 +1,7 @@
 ﻿using PartsHoleLib;
 
+using PartsHoleRestLibrary.Requests;
+
 namespace PartsHoleAPI.DBServices.Interfaces;
 
 public interface IInvoiceService : ICollectionService<InvoiceModel>

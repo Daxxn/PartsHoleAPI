@@ -72,7 +72,7 @@ public class PartNumberCollection : IList<PartNumber>
    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
    #endregion
 
-   public override string ToString() => $"PartNumber Collection {_parts.Count}";
+   public override string ToString() => $"SupplierPartNumber Collection {_parts.Count}";
    #endregion
 
    #region Full Props
