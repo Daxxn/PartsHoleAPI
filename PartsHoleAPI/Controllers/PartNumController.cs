@@ -93,7 +93,7 @@ public class PartNumController : ControllerBase
          }
          var newPartNumber = await _partNumberService.GeneratePartNumberAsync(requestData);
          return newPartNumber is null
-            ? throw new ModelNotFoundException("PartNumber", "Part number not created.")
+            ? throw new ModelNotFoundException("SupplierPartNumber", "Part number not created.")
             : new APIResponse<PartNumber>(newPartNumber, "POST");
       }
       catch (ModelNotFoundException e)

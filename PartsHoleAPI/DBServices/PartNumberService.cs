@@ -44,22 +44,22 @@ namespace PartsHoleAPI.DBServices
             throw new ModelNotFoundException("UserModel", "User not found.");
          foundUser.PartNumbers ??= new();
          var allPartNumbers = new PartNumberCollection(
-            (await Collection.FindAsync(pn => foundUser.PartNumbers.Contains(pn._id))).ToEnumerable()
+            (await Collection.FindAsync(pn => foundUser.PartNumbers.Contains(pn.Id))).ToEnumerable()
          );
 
          var newPN = allPartNumbers.New(requestData.FullCategory);
          await Collection.InsertOneAsync(newPN);
-         await _userService.AppendModelToUserAsync(requestData.UserId, newPN._id, ModelIDSelector.PARTNUMBERS);
+         await _userService.AppendModelToUserAsync(requestData.UserId, newPN.Id, ModelIDSelector.PARTNUMBERS);
          return newPN;
       }
       #endregion
 
       public async Task<PartNumber?> GetFromDatabaseAsync(string id) =>
-         (await Collection.FindAsync(pn => pn._id == id)).FirstOrDefault();
+         (await Collection.FindAsync(pn => pn.Id == id)).FirstOrDefault();
       public async Task<IEnumerable<PartNumber>?> GetFromDatabaseAsync(string[] ids)
       {
          var idList = ids.ToList();
-         return (await Collection.FindAsync(pn => idList.Contains(pn._id))).ToEnumerable();
+         return (await Collection.FindAsync(pn => idList.Contains(pn.Id))).ToEnumerable();
       }
 
       public async Task<bool> AddToDatabaseAsync(PartNumber data)
@@ -68,10 +68,10 @@ namespace PartsHoleAPI.DBServices
          if (foundPNs.Any())
          {
             return foundPNs.Count > 1
-               ? throw new DatabaseDesyncException("More than one ID found in PartNumber database.", foundPNs.Select(x => x.ToString()))
+               ? throw new DatabaseDesyncException("More than one ID found in SupplierPartNumber database.", foundPNs.Select(x => x.ToString()))
                : false;
          }
-         data._id ??= ObjectId.GenerateNewId().ToString();
+         data.Id ??= ObjectId.GenerateNewId().ToString();
          await Collection.InsertOneAsync(data);
          return true;
       }
@@ -112,9 +112,9 @@ namespace PartsHoleAPI.DBServices
 
       public async Task<bool> UpdateDatabaseAsync(string id, PartNumber data)
       {
-         if ((await Collection.FindAsync(pn => pn._id == id)).FirstOrDefault() != null)
+         if ((await Collection.FindAsync(pn => pn.Id == id)).FirstOrDefault() != null)
          {
-            var result = await Collection.ReplaceOneAsync((pn) => pn._id == id, data);
+            var result = await Collection.ReplaceOneAsync((pn) => pn.Id == id, data);
             return result.ModifiedCount == 1;
          }
          return false;
@@ -126,7 +126,7 @@ namespace PartsHoleAPI.DBServices
 
          await Parallel.ForEachAsync(dataList, async (d, token) =>
          {
-            var result = await Collection.ReplaceOneAsync(pn => pn._id == d._id, d, cancellationToken: token);
+            var result = await Collection.ReplaceOneAsync(pn => pn.Id == d.Id, d, cancellationToken: token);
             var index = dataList.IndexOf(d);
             if (result.ModifiedCount == 1)
             {
@@ -158,7 +158,7 @@ namespace PartsHoleAPI.DBServices
       public async Task<int> DeleteFromDatabaseAsync(string[] ids)
       {
          var idList = ids.ToList();
-         return (int)(await Collection.DeleteManyAsync((pn) => idList.Contains(pn._id))).DeletedCount;
+         return (int)(await Collection.DeleteManyAsync((pn) => idList.Contains(pn.Id))).DeletedCount;
       }
       #endregion
 

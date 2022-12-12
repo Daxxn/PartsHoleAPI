@@ -4,8 +4,6 @@ using ExcelParserLibrary;
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 
-using OfficeOpenXml;
-
 using PartsHoleAPI.DBServices;
 using PartsHoleAPI.DBServices.Interfaces;
 using PartsHoleAPI.Utils;
@@ -18,8 +16,6 @@ public class Program
 {
    public static void Main(string[] args)
    {
-      ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
-
       var builder = WebApplication.CreateBuilder(args);
 
       #region Add config variables to Services

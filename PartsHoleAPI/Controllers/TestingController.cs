@@ -6,6 +6,8 @@ using PartsHoleAPI.Utils;
 using PartsHoleLib;
 using PartsHoleLib.Interfaces;
 
+using PartsHoleRestLibrary.Responses;
+
 namespace PartsHoleAPI.Controllers;
 
 [Route("api/[controller]")]
@@ -13,8 +15,8 @@ namespace PartsHoleAPI.Controllers;
 public class TestingController : ControllerBase
 {
    private readonly ILogger<TestingController> _logger;
-   private readonly ICollectionService<PartModel> _partsCollection;
-   public TestingController(ILogger<TestingController> logger, ICollectionService<PartModel> partsCollection)
+   private readonly IPartService _partsCollection;
+   public TestingController(ILogger<TestingController> logger, IPartService partsCollection)
    {
       _logger = logger;
       _partsCollection = partsCollection;
@@ -61,5 +63,12 @@ public class TestingController : ControllerBase
    {
       StatusCode(StatusCodes.Status501NotImplemented);
       return 0;
+   }
+
+   [HttpPost("invoice-test")]
+   public APIResponse<InvoiceModel> PostInvoiceTest([FromBody] InvoiceModel invoice)
+   {
+      _logger.ApiLogInfo("POST", "api/testing/invoice-test", $"Received Invoice: {invoice.OrderNumber}");
+      return new(invoice, "POST");
    }
 }

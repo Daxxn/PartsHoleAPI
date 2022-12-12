@@ -1,4 +1,6 @@
-﻿using CSVParserLibrary.Models;
+﻿using System.Text.Json.Serialization;
+
+using CSVParserLibrary.Models;
 
 using ExcelParserLibrary.Models;
 
@@ -21,11 +23,11 @@ public class InvoicePartModel
 
    [CSVProperty("PART NUMBER")]
    [ExcelProperty("Mouser #:")]
-   public string PartNumber { get; set; } = null!;
+   public string SupplierPartNumber { get; set; } = null!;
 
    [CSVProperty("MANUFACTURER PART NUMBER")]
    [ExcelProperty("Mfr. #:")]
-   public string ManufacturerPartNumber { get; set; } = null!;
+   public string PartNumber { get; set; } = null!;
 
    [CSVProperty("DESCRIPTION")]
    [ExcelProperty("Desc.:")]
@@ -33,7 +35,7 @@ public class InvoicePartModel
 
    [CSVProperty("CUSTOMER REFERENCE")]
    [ExcelProperty("Customer #")]
-   public string CustomerReference { get; set; } = null!;
+   public string? Reference { get; set; }
 
    [CSVProperty("BACKORDER")]
    [ExcelIgnore]
@@ -50,11 +52,12 @@ public class InvoicePartModel
 
    #region Methods
    public override string ToString() =>
-      $"{(Id is null ? "" : "'ID'")} {ManufacturerPartNumber} {PartNumber} {CustomerReference} {Quantity} {UnitPrice} {Description}";
+      $"{(Id is null ? "" : "'ID'")} {PartNumber} {SupplierPartNumber} {Reference} {Quantity} {UnitPrice} {Description}";
    #endregion
 
    #region Other Props
    [ExcelIgnore]
+   [JsonIgnore]
    public decimal ExtendedPrice => UnitPrice * Quantity;
    #endregion
 }

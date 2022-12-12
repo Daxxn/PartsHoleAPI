@@ -40,7 +40,7 @@ public class UserService : IUserService
    #region Methods
    public async Task<UserModel?> GetFromDatabaseAsync(string id)
    {
-      var result = await UserCollection.FindAsync(x => x._id == id);
+      var result = await UserCollection.FindAsync(x => x.Id == id);
       if (result == null)
          return null;
       var user = await result.FirstOrDefaultAsync();
@@ -53,7 +53,7 @@ public class UserService : IUserService
 
       if (user.Parts.Count > 0)
       {
-         var partsResult = await PartsCollection.FindAsync((x) => user.Parts.Contains(x._id));
+         var partsResult = await PartsCollection.FindAsync((x) => user.Parts.Contains(x.Id));
          if (partsResult != null)
          {
             data.Parts = await partsResult.ToListAsync();
@@ -61,7 +61,7 @@ public class UserService : IUserService
       }
       if (user.Invoices.Count > 0)
       {
-         var invoiceResult = await InvoicesCollection.FindAsync((x) => user.Invoices.Contains(x._id));
+         var invoiceResult = await InvoicesCollection.FindAsync((x) => user.Invoices.Contains(x.Id));
          if (invoiceResult != null)
          {
             data.Invoices = await invoiceResult.ToListAsync();
@@ -69,7 +69,7 @@ public class UserService : IUserService
       }
       if (user.Bins.Count > 0)
       {
-         var binResult = await BinCollection.FindAsync((x) => user.Bins.Contains(x._id));
+         var binResult = await BinCollection.FindAsync((x) => user.Bins.Contains(x.Id));
          if (binResult != null)
          {
             data.Bins = await binResult.ToListAsync();
@@ -77,7 +77,7 @@ public class UserService : IUserService
       }
       if (user.PartNumbers.Count > 0)
       {
-         var partNumbers = await PartNumberCollection.FindAsync(x => user.PartNumbers.Contains(x._id));
+         var partNumbers = await PartNumberCollection.FindAsync(x => user.PartNumbers.Contains(x.Id));
          if (partNumbers != null)
          {
             data.PartNumbers = await partNumbers.ToListAsync();
@@ -89,7 +89,7 @@ public class UserService : IUserService
 
    public async Task<bool> AddToDatabaseAsync(UserModel data)
    {
-      var result = await UserCollection.FindAsync(x => x._id == data._id);
+      var result = await UserCollection.FindAsync(x => x.Id == data.Id);
       if (result is null)
          throw new ModelNotFoundException("UserModel", "User not found.");
 
@@ -104,21 +104,21 @@ public class UserService : IUserService
 
    public async Task<bool> UpdateDatabaseAsync(string id, UserModel data)
    {
-      var filter = Builders<UserModel>.Filter.Where((u) => u._id == id);
+      var filter = Builders<UserModel>.Filter.Where((u) => u.Id == id);
       var result = await UserCollection.ReplaceOneAsync(filter, data);
       return result is null ? false : result.ModifiedCount > 0;
    }
 
    public async Task<bool> DeleteFromDatabaseAsync(string id)
    {
-      var filter = Builders<UserModel>.Filter.Where((u) => u._id == id);
+      var filter = Builders<UserModel>.Filter.Where((u) => u.Id == id);
       var result = await UserCollection.DeleteOneAsync(filter);
       return result != null && result?.DeletedCount > 0;
    }
 
    public async Task<bool> RemoveModelFromUserAsync(string userId, string modelId, ModelIDSelector selector)
    {
-      var foundUser = (await UserCollection.FindAsync(user => user._id == userId)).FirstOrDefault();
+      var foundUser = (await UserCollection.FindAsync(user => user.Id == userId)).FirstOrDefault();
       if (foundUser != null)
       {
          switch (selector)
@@ -127,7 +127,7 @@ public class UserService : IUserService
                if (foundUser.Parts.Remove(modelId))
                {
                   var update = Builders<UserModel>.Update.Set((user) => user.Parts, foundUser.Parts);
-                  var result = await UserCollection.UpdateOneAsync(user => user._id == userId, update);
+                  var result = await UserCollection.UpdateOneAsync(user => user.Id == userId, update);
                   if (result.IsAcknowledged)
                   {
                      return result.ModifiedCount > 0;
@@ -138,7 +138,7 @@ public class UserService : IUserService
                if (foundUser.Invoices.Remove(modelId))
                {
                   var update = Builders<UserModel>.Update.Set((user) => user.Invoices, foundUser.Invoices);
-                  var result = await UserCollection.UpdateOneAsync(user => user._id == userId, update);
+                  var result = await UserCollection.UpdateOneAsync(user => user.Id == userId, update);
                   if (result.IsAcknowledged)
                   {
                      return result.ModifiedCount > 0;
@@ -149,7 +149,7 @@ public class UserService : IUserService
                if (foundUser.Bins.Remove(modelId))
                {
                   var update = Builders<UserModel>.Update.Set((user) => user.Bins, foundUser.Bins);
-                  var result = await UserCollection.UpdateOneAsync(user => user._id == userId, update);
+                  var result = await UserCollection.UpdateOneAsync(user => user.Id == userId, update);
                   if (result.IsAcknowledged)
                   {
                      return result.ModifiedCount > 0;
@@ -160,7 +160,7 @@ public class UserService : IUserService
                if (foundUser.PartNumbers.Remove(modelId))
                {
                   var update = Builders<UserModel>.Update.Set((user) => user.Parts, foundUser.PartNumbers);
-                  var result = await UserCollection.UpdateOneAsync(user => user._id == userId, update);
+                  var result = await UserCollection.UpdateOneAsync(user => user.Id == userId, update);
                   if (result.IsAcknowledged)
                   {
                      return result.ModifiedCount > 0;
@@ -176,7 +176,7 @@ public class UserService : IUserService
 
    public async Task<bool> AppendModelToUserAsync(string userId, string modelId, ModelIDSelector selector)
    {
-      var foundUser = (await UserCollection.FindAsync(user => user._id == userId)).FirstOrDefault();
+      var foundUser = (await UserCollection.FindAsync(user => user.Id == userId)).FirstOrDefault();
       if (foundUser != null)
       {
          switch (selector)
@@ -184,7 +184,7 @@ public class UserService : IUserService
             case ModelIDSelector.PARTS:
                foundUser.Parts.Add(modelId);
                var update = Builders<UserModel>.Update.Set((user) => user.Parts, foundUser.Parts);
-               var result = await UserCollection.UpdateOneAsync(user => user._id == userId, update);
+               var result = await UserCollection.UpdateOneAsync(user => user.Id == userId, update);
                if (result.IsAcknowledged)
                {
                   return result.ModifiedCount > 0;
@@ -193,7 +193,7 @@ public class UserService : IUserService
             case ModelIDSelector.INVOICES:
                foundUser.Invoices.Add(modelId);
                update = Builders<UserModel>.Update.Set((user) => user.Invoices, foundUser.Invoices);
-               result = await UserCollection.UpdateOneAsync(user => user._id == userId, update);
+               result = await UserCollection.UpdateOneAsync(user => user.Id == userId, update);
                if (result.IsAcknowledged)
                {
                   return result.ModifiedCount > 0;
@@ -202,7 +202,7 @@ public class UserService : IUserService
             case ModelIDSelector.BINS:
                foundUser.Bins.Add(modelId);
                update = Builders<UserModel>.Update.Set((user) => user.Bins, foundUser.Bins);
-               result = await UserCollection.UpdateOneAsync(user => user._id == userId, update);
+               result = await UserCollection.UpdateOneAsync(user => user.Id == userId, update);
                if (result.IsAcknowledged)
                {
                   return result.ModifiedCount > 0;
@@ -211,7 +211,7 @@ public class UserService : IUserService
             case ModelIDSelector.PARTNUMBERS:
                foundUser.PartNumbers.Add(modelId);
                update = Builders<UserModel>.Update.Set((user) => user.PartNumbers, foundUser.PartNumbers);
-               result = await UserCollection.UpdateOneAsync(user => user._id == userId, update);
+               result = await UserCollection.UpdateOneAsync(user => user.Id == userId, update);
                if (result.IsAcknowledged)
                {
                   return result.ModifiedCount > 0;

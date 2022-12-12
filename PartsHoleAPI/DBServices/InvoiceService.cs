@@ -2,6 +2,8 @@
 
 using CSVParserLibrary;
 
+using ExcelParserLibrary.Models;
+
 using Microsoft.Extensions.Options;
 
 using MongoDB.Bson;
@@ -14,6 +16,8 @@ using PartsHoleLib;
 using PartsHoleLib.Enums;
 using PartsHoleLib.Interfaces;
 
+using PartsHoleRestLibrary.Requests;
+
 using SixLabors.Fonts.Tables.AdvancedTypographic;
 
 namespace PartsHoleAPI.DBServices;
@@ -23,7 +27,8 @@ public class InvoiceService : IInvoiceService
    #region Local Props
    public IMongoCollection<InvoiceModel> Collection { get; init; }
    private readonly IAbstractFactory<ICSVParser> _parserFactory;
-   private readonly ICSVParserOptions _parserOptions;
+   private readonly ICSVParserOptions _csvParserOptions;
+   private readonly ExcelParserOptions _excelParserOptions;
    private readonly IMouserParseService _mouserParseService;
    private readonly ILogger<InvoiceService> _logger;
    #endregion
@@ -38,7 +43,7 @@ public class InvoiceService : IInvoiceService
       _parserFactory = parserFactory;
       _mouserParseService = mouserParseService;
       _logger = logger;
-      _parserOptions = new CSVParserOptions()
+      _csvParserOptions = new CSVParserOptions()
       {
          IgnoreCase = true,
          IgnoreLineParseErrors = true,
@@ -46,6 +51,10 @@ public class InvoiceService : IInvoiceService
          {
             { "Totals-Exclusion", (props) => props.Length == 9 && props[7].ToLower() == "subtotal" }
          }
+      };
+      _excelParserOptions = new()
+      {
+         IgnorePropertyErrors = true,
       };
       var str = settings.Value.GetCollection<InvoiceModel>();
       var client = new MongoClient(settings.Value.ConnectionString);
@@ -57,7 +66,7 @@ public class InvoiceService : IInvoiceService
    #region Methods
    public async Task<InvoiceModel?> GetFromDatabaseAsync(string id)
    {
-      var result = await Collection.FindAsync(invoice => invoice._id == id);
+      var result = await Collection.FindAsync(invoice => invoice.Id == id);
       if (result is null)
          return null;
       var invoices = await result.ToListAsync();
@@ -72,18 +81,21 @@ public class InvoiceService : IInvoiceService
 
    public async Task<IEnumerable<InvoiceModel>?> GetFromDatabaseAsync(string[] ids)
    {
-      var result = await Collection.FindAsync(part => ids.Contains(part._id));
+      var result = await Collection.FindAsync(part => ids.Contains(part.Id));
       return result?.ToEnumerable();
    }
 
    public async Task<bool> AddToDatabaseAsync(InvoiceModel data)
    {
-      var filter = Builders<InvoiceModel>.Filter.Where(x => data._id == x._id);
+      var filter = Builders<InvoiceModel>.Filter.Where(x => data.Id == x.Id);
       var result = await Collection.FindAsync(filter);
       if (result is null)
          throw new Exception("Find invoice failed.");
       if (result.FirstOrDefault() is null)
-         return await AddToDatabaseAsync(data);
+      {
+         await Collection.InsertOneAsync(data);
+         return true;
+      }
       var replaceResult = await Collection.ReplaceOneAsync(filter, data);
       return replaceResult is not null && replaceResult.ModifiedCount > 0;
    }
@@ -92,8 +104,8 @@ public class InvoiceService : IInvoiceService
    {
       var invoiceData = data.ToList();
       var status = new List<bool>(invoiceData.Count);
-      var ids = data.Select(x => x._id).ToList();
-      var result = await Collection.FindAsync(part => ids.Contains(part._id));
+      var ids = data.Select(x => x.Id).ToList();
+      var result = await Collection.FindAsync(part => ids.Contains(part.Id));
       if (result is null)
          return null;
       if (result.ToList().Count > 0)
@@ -111,7 +123,7 @@ public class InvoiceService : IInvoiceService
 
    public async Task<bool> UpdateDatabaseAsync(string id, InvoiceModel data)
    {
-      var filter = Builders<InvoiceModel>.Filter.Where(x => id == x._id);
+      var filter = Builders<InvoiceModel>.Filter.Where(x => id == x.Id);
       var result = await Collection.FindAsync(filter);
       if (result is null)
          throw new Exception("Find failed.");
@@ -131,9 +143,9 @@ public class InvoiceService : IInvoiceService
          if (token.IsCancellationRequested)
             return;
          var success = false;
-         if (!string.IsNullOrEmpty(d._id))
+         if (!string.IsNullOrEmpty(d.Id))
          {
-            success = await UpdateDatabaseAsync(d._id, d);
+            success = await UpdateDatabaseAsync(d.Id, d);
          }
          var index = partData.IndexOf(d);
          results.Insert(index, success);
@@ -143,13 +155,13 @@ public class InvoiceService : IInvoiceService
 
    public async Task<bool> DeleteFromDatabaseAsync(string id)
    {
-      var result = await Collection.DeleteOneAsync((p) => p._id == id);
+      var result = await Collection.DeleteOneAsync((p) => p.Id == id);
       return result is not null && result.DeletedCount > 0;
    }
 
    public async Task<int> DeleteFromDatabaseAsync(string[] ids)
    {
-      var result = await Collection.DeleteManyAsync((p) => ids.Contains(p._id));
+      var result = await Collection.DeleteManyAsync((p) => ids.Contains(p.Id));
       return result is null ? 0 : (int)result.DeletedCount;
    }
 
@@ -181,26 +193,7 @@ public class InvoiceService : IInvoiceService
             }
          }
       }
-      if (newInvoice is null)
-      {
-         throw new Exception("Failed to parse invoice.");
-      }
-      var foundInvoices = (await Collection.FindAsync((inv) => inv.OrderNumber == newInvoice.OrderNumber)).FirstOrDefault();
-      if (foundInvoices != null)
-      {
-         if ((await Collection.ReplaceOneAsync((inv) => inv.OrderNumber == newInvoice.OrderNumber, newInvoice)).IsAcknowledged)
-         {
-            newInvoice._id = foundInvoices._id;
-            return newInvoice;
-         }
-         throw new Exception("Invoice replacement failed. Replace failed to acknowledge.");
-      }
-      else
-      {
-         newInvoice._id = ObjectId.GenerateNewId().ToString();
-         await Collection.InsertOneAsync(newInvoice);
-         return newInvoice;
-      }
+      return newInvoice is null ? throw new Exception("Failed to parse invoice.") : newInvoice;
    }
 
    /// <summary>
@@ -257,10 +250,10 @@ public class InvoiceService : IInvoiceService
 
    private async Task<(InvoiceModel model, IEnumerable<Exception>? errors)?> ParseDigikeyInvoiceAsync(IFormFile file)
    {
-      if (int.TryParse(Path.GetFileNameWithoutExtension(file.FileName), out int orderNum))
+      if (uint.TryParse(Path.GetFileNameWithoutExtension(file.FileName), out uint orderNum))
       {
          var parser = _parserFactory.Create();
-         var results = await parser.ParseFileAsync<InvoicePartModel>(file.OpenReadStream(), _parserOptions);
+         var results = await parser.ParseFileAsync<InvoicePartModel>(file.OpenReadStream(), _csvParserOptions);
          if (results is null)
             return null;
          var newInvoice = new InvoiceModel
@@ -276,7 +269,7 @@ public class InvoiceService : IInvoiceService
 
    private async Task<(InvoiceModel model, IEnumerable<Exception>? errors)?> ParseMouserInvoiceAsync(IFormFile file)
    {
-      if (int.TryParse(Path.GetFileNameWithoutExtension(file.FileName), out int orderNum))
+      if (uint.TryParse(Path.GetFileNameWithoutExtension(file.FileName), out uint orderNum))
       {
          var results = await _mouserParseService.ParseFileAsync(file);
          if (results is null)

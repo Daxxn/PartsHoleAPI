@@ -7,12 +7,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="CSVParserLibrary" Version="1.0.0" />
+    <PackageReference Include="CSVParserLibrary" Version="1.1.0" />
+    <PackageReference Include="ExcelParserLibrary" Version="1.0.2" />
     <PackageReference Include="MongoDB.Driver" Version="2.18.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\..\..\CSharpLibraries\ExcelParserLibrary\ExcelParserLibrary\ExcelParserLibrary.csproj" />
   </ItemGroup>
 
 </Project>
